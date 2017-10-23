@@ -139,7 +139,7 @@ Make a copy of `config.ini.sample`, and edit it.
     </thead>
     <tbody>
         <tr>
-            <td rowspan=4>Update 1A</td>
+            <td rowspan=6>Update 1A</td>
             <td>load_swissprot</td>
             <td>Stores UniProtKB/Swiss-Prot proteins in an HDF5 file</td>
             <td></td>
@@ -151,7 +151,7 @@ Make a copy of `config.ini.sample`, and edit it.
         </tr>
         <tr>
             <td>dump_db</td>
-            <td>	Stores proteins in the InterPro database in an HDF5 file</td>
+            <td>Stores proteins in the InterPro database in an HDF5 file</td>
             <td></td>
         </tr>
         <tr>
