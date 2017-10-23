@@ -117,10 +117,14 @@ def insert(old_h5, new_h5, db_user, db_passwd, db_host, **kwargs):
         'annotation': 0
     }
 
-    with h5py.File(old_h5, 'r') as fh1, h5py.File(new_h5) as fh2:
+    with h5py.File(old_h5, 'r') as fh1, h5py.File(new_h5, 'r') as fh2:
         old_ac = fh1['proteins/ac'].value
         new_ac = fh2['proteins/ac'].value
         new_sec = fh2['pairs/sec'].value
+
+        if new_ac.size != np.unique(new_ac).size:
+            logging.critical('duplicated entries in {}'.format(new_ac))
+            exit(1)
 
         # Find deleted proteins
         logging.info('finding deleted proteins')
