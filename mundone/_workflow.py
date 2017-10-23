@@ -222,7 +222,7 @@ class Workflow:
                 "UPDATE run "
                 "SET status = ?, infile = ?, outfile = ?, start_time = strftime('%Y-%m-%d %H:%M:%S') "
                 "WHERE task_id = ? AND active = 1",
-                (tsk.STATUS_RUNNING, task_id, infile, outfile)
+                (tsk.STATUS_RUNNING, infile, outfile, task_id)
             )
 
         for task_id, status, result in runs_terminated:
