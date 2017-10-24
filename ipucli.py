@@ -194,7 +194,7 @@ def main():
         Task(
             name='uniparc_xref',
             fn=ipu.xref.refresh_uniparc,
-            args=(*db_user_pro, db_host),
+            args=(*(db_user_parc if args.lowmem else db_user_pro), db_host),
             kwargs=dict(useproc=not args.lowmem),
             lsf=dict(queue=queue)
         ),
