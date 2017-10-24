@@ -336,7 +336,7 @@ def delete(user, passwd, db, **kwargs):
             Task(
                 fn=_count_proteins_to_delete,
                 args=(user, passwd, db, t['owner'], t['name']),
-                lsf=dict(name=t['name']),
+                lsf=dict(name=t['name'], queue=queue),
                 log=False
             )
         )
@@ -345,7 +345,7 @@ def delete(user, passwd, db, **kwargs):
         Task(
             fn=_count_proteins_to_delete,
             args=(user, passwd, db, 'INTERPRO', 'PROTEIN'),
-            lsf=dict(name='PROTEIN'),
+            lsf=dict(name='PROTEIN', queue=queue),
             log=False
         )
     )
@@ -386,7 +386,7 @@ def delete(user, passwd, db, **kwargs):
                 fn=_delete_iter,
                 args=(user, passwd, db, t['owner'], t['name'], cnt_to_delete_all),
                 kwargs=dict(chunksize=chunksize, logfile=logfile),
-                lsf=dict(name=t['name']),
+                lsf=dict(name=t['name'], queue=queue),
                 log=False
             )
         )
@@ -397,7 +397,7 @@ def delete(user, passwd, db, **kwargs):
             fn=_delete_iter,
             args=(user, passwd, db, 'INTERPRO', 'PROTEIN', cnt_to_delete_all),
             kwargs=dict(chunksize=chunksize, logfile=logfile),
-            lsf=dict(name='PROTEIN'),
+            lsf=dict(name='PROTEIN', queue=queue),
             log=False
         )
     )
@@ -434,7 +434,7 @@ def delete(user, passwd, db, **kwargs):
                 fn=utils.toggle_constraint,
                 args=(None, t['owner'], t['name'], t['constraint']),
                 kwargs=dict(enable=True, credentials=(user, passwd, db)),
-                lsf=dict(name=t['constraint']),
+                lsf=dict(name=t['constraint'], queue=queue),
                 log=False
             )
         )
@@ -551,7 +551,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=1),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -576,7 +576,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -587,7 +587,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -606,7 +606,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=1),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -622,7 +622,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=1),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -633,7 +633,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=1),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -649,7 +649,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=1),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -666,7 +666,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -682,7 +682,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -697,7 +697,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -720,7 +720,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -743,7 +743,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -754,7 +754,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -771,7 +771,7 @@ def delete_alt(user, passwd, db, **kwargs):
             fn=utils.dump_and_load,
             args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
             kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table)
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
         )
     )
 
@@ -788,7 +788,7 @@ def delete_alt(user, passwd, db, **kwargs):
             Task(
                 fn=_count_proteins_to_delete,
                 args=(user, passwd, db, owner, table),
-                lsf=dict(name=table),
+                lsf=dict(name=table, queue=queue),
                 log=False
             )
         )
@@ -797,7 +797,7 @@ def delete_alt(user, passwd, db, **kwargs):
         Task(
             fn=_count_proteins_to_delete,
             args=(user, passwd, db, 'INTERPRO', 'PROTEIN'),
-            lsf=dict(name='PROTEIN'),
+            lsf=dict(name='PROTEIN', queue=queue),
             log=False
         )
     )
@@ -831,7 +831,7 @@ def delete_alt(user, passwd, db, **kwargs):
             Task(
                 fn=utils.enable_table_constraints,
                 args=(user, passwd, db, owner, table),
-                lsf=dict(name=table),
+                lsf=dict(name=table, queue=queue),
                 log=False
             )
         )
