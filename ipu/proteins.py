@@ -686,20 +686,20 @@ def delete_alt(user, passwd, db, **kwargs):
         )
     )
 
-    # PROTEIN_IDA
-    table = 'PROTEIN_IDA'
-    columns = [
-        ('PROTEIN_AC', 'CHAR(15)'),
-        ('IDA', 'CHAR(2500)')
-    ]
-    tasks.append(
-        Task(
-            fn=utils.dump_and_load,
-            args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
-            kwargs=dict(exclude=deleted, idx=0),
-            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
-        )
-    )
+    # # PROTEIN_IDA
+    # table = 'PROTEIN_IDA'
+    # columns = [
+    #     ('PROTEIN_AC', 'CHAR(15)'),
+    #     ('IDA', 'CHAR(2500)')
+    # ]
+    # tasks.append(
+    #     Task(
+    #         fn=utils.dump_and_load,
+    #         args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
+    #         kwargs=dict(exclude=deleted, idx=0),
+    #         lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
+    #     )
+    # )
 
     # PROTEIN
     table = 'PROTEIN'
