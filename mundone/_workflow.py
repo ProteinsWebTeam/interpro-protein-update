@@ -140,7 +140,11 @@ class Workflow:
         task_ids = self._init_runs(task_names, rerun=rerun, incdep=incdep, commit=process)
 
         if not process:
-            logging.info('tasks about to be processed: {}'.format(', '.join(sorted([self.tasks[task_id].name for task_id in task_ids]))))
+            logging.info(
+                'tasks about to be processed: {}'.format(
+                    ', '.join(sorted([self.tasks[task_id].name for task_id in task_ids]))
+                )
+            )
             return
 
         names2ids = {task.name: task_id for task_id, task in self.tasks.items()}
@@ -176,25 +180,37 @@ class Workflow:
                         try:
                             dependency_run = runs[names2ids[dependency_name]]
                         except KeyError:
-                            # unknown dependency (should never happen) or no active run for the dependency
-                            flag = 0
+                            '''
+                            Possible reasons:
+                                - unknown dependency (should NEVER happen, as DB is populate before)
+                                - no active run for dependency
+                                        e.g.    first time running the workflow and ``incdep`` is ``False``
+                                                this is an issue as the task will never be submitted <- TODO fix
+                            '''
+                            flag |= 1
                             break
                         else:
                             if dependency_run['status'] == tsk.STATUS_ERROR:
-                                flag |= 1
-                            elif dependency_run['status'] != tsk.STATUS_SUCCESS:
-                                # Pending or running
                                 flag |= 2
+                            elif dependency_run['status'] is None or dependency_run['status'] != tsk.STATUS_SUCCESS:
+                                '''
+                                Dependency is pending or running.
+                                If status is `None`, it means the dependency task was not submitted yet,
+                                therefore it can be considered as pending.
+                                '''
+                                flag |= 4
 
                     if flag & 1:
+                        continue
+                    elif flag & 2:
                         # step cannot run because one or more dependencies failed: flag this run as failed too
                         runs_terminated.append((task_id, tsk.STATUS_ERROR, None))
-                    elif not flag & 2:
+                    elif not flag & 4:
                         # ready to be submitted
                         args = []
 
                         for dependency_name in task.input:
-                            dependency_run = runs[names2ids[dependency_name]]
+                            dependency_run = runs[names2ids[dependency_name]]  # todo: fix since it raises a KeyError if there is no run for the task
                             args += dependency_run['output']  # output is always a list
 
                         task.start(input=args, dir=self.workdir)
@@ -239,7 +255,7 @@ class Workflow:
 
     def _get_runs(self):
         """
-        
+
         :return: active runs.
         :rtype: dict
         """
@@ -255,7 +271,7 @@ class Workflow:
             try:
                 result = json.loads(result)
             except TypeError:
-                result = None
+                result = []
             else:
                 if isinstance(result, tuple):
                     result = list(result)
