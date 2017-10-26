@@ -176,7 +176,13 @@ class Workflow:
                     keep_running = True
                     flag = 0
 
-                    for dependency_name in (task.requires + task.input):
+                    if incdep:
+                        dependencies = task.requires + task.input
+                    else:
+                        # Even if not considering dependencies, a task cannot start if its input comes from other tasks
+                        dependencies = task.input
+
+                    for dependency_name in dependencies:
                         try:
                             dependency_run = runs[names2ids[dependency_name]]
                         except KeyError:
