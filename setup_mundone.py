@@ -10,6 +10,6 @@ setup(
     version=__version__,
     description='Mundane task management',
     long_description='',
-    packages=find_packages(),
+    packages=find_packages(exclude=['ipu']),
     zip_safe=False
 )
