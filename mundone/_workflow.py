@@ -163,8 +163,6 @@ class Workflow:
                     continue  # task does not have an active run
 
                 if run['status'] == tsk.STATUS_RUNNING:
-                    keep_running = True
-
                     if task.has_terminated():
                         if task.is_done():
                             logging.info("task '{}' has terminated".format(task.name))
@@ -172,6 +170,8 @@ class Workflow:
                             logging.error("task '{}' has failed".format(task.name))
 
                         runs_terminated.append((task_id, task.status, task.collect()))
+                    else:
+                        keep_running = True
                 elif run['status'] == tsk.STATUS_PENDING:
                     keep_running = True
                     flag = 0
