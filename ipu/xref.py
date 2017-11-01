@@ -28,20 +28,34 @@ def refresh_uniparc(user, passwd, db, useproc=True):
             logging.info('refreshing UNIPARC.XREF')
             cur.callproc('UNIPARC.REFRESH_XREF')
         else:
-            logging.info('dropping UNIPARC.XREF')
-            cur.execute('DROP TABLE UNIPARC.XREF')
+            logging.info('dropping UNIPARC.XREF_OLD')
+            cur.execute('DROP TABLE UNIPARC.XREF_OLD')
 
-            logging.info('recreating UNIPARC.XREF')
-            cur.execute('CREATE TABLE UNIPARC.XREF TABLESPACE UNIPARC_TAB AS SELECT upi, ac, dbid, deleted, version FROM UNIPARC.xref@UAREAD')
+            logging.info('recreating UNIPARC.XREF_NEW')
+            cur.execute('CREATE TABLE xref_new TABLESPACE uniparc_tab AS SELECT upi, ac, dbid, deleted, version FROM UNIPARC.xref@UAREAD')
 
             logging.info('indexing AC column')
-            cur.execute('CREATE INDEX xref_ac ON UNIPARC.XREF(ac) TABLESPACE uniparc_ind')
+            cur.execute('CREATE INDEX xref_ac_new ON xref_new(ac) TABLESPACE uniparc_in')
 
             logging.info('indexing AC column (upper cases)')
-            cur.execute('CREATE INDEX xref_upper_ac ON UNIPARC.XREF(UPPER(ac)) TABLESPACE uniparc_ind')
+            cur.execute('CREATE INDEX xref_upper_ac_new ON xref_new(UPPER(ac)) TABLESPACE uniparc_ind')
 
             logging.info('indexing UPI column')
-            cur.execute('CREATE INDEX xref_upi ON UNIPARC.XREF(upi) TABLESPACE uniparc_ind')
+            cur.execute('CREATE INDEX xref_upi_new ON xref_new(upi) TABLESPACE uniparc_ind')
+
+            logging.info('renaming indexes (1/2)')
+            cur.execute('ALTER INDEX xref_ac RENAME TO xref_ac_old')
+            cur.execute('ALTER INDEX xref_upper_ac RENAME TO xref_upper_ac_old')
+            cur.execute('ALTER INDEX xref_upi RENAME TO xref_upi_old')
+
+            logging.info('renaming tables')
+            cur.execute('ALTER TABLE xref RENAME TO xref_old')
+            cur.execute('ALTER TABLE xref_new RENAME TO xref')
+
+            logging.info('renaming indexes (2/2)')
+            cur.execute('ALTER INDEX xref_ac_new RENAME TO xref_ac')
+            cur.execute('ALTER INDEX xref_upper_ac_new RENAME TO xref_upper_ac')
+            cur.execute('ALTER INDEX xref_upi_new RENAME TO xref_upi')
 
             logging.info('granting privileges')
             cur.execute('GRANT SELECT ON UNIPARC.XREF TO PUBLIC')
@@ -52,7 +66,7 @@ def refresh_uniparc(user, passwd, db, useproc=True):
             logging.info('recreating UNIPARC.CV_DATABASE')
             cur.execute('CREATE TABLE UNIPARC.CV_DATABASE TABLESPACE UNIPARC_TAB AS SELECT * FROM UNIPARC.CV_DATABASE@UAREAD')
 
-            logging.info('creating unique index on ID column')
+            logging.info('creating unique indexes')
             cur.execute('CREATE UNIQUE INDEX PK_CV_DATABASE ON UNIPARC.CV_DATABASE (ID) TABLESPACE UNIPARC_IND')
 
             logging.info('creating unique index on DESCR column')
