@@ -26,7 +26,7 @@ def prepare_update(db_user, db_passwd, db_host, **kwargs):
 
     if smtp_host and from_addr and to_addrs:
         msg = [
-            'Subject: [InterPro-team] Report from InterPro protein update',
+            'Subject: Report from InterPro protein update',
             '',
             '{:<30}{:>10}'.format('Matches out of bounds', data['pos_error1']),
             '{:<30}{:>10}'.format('Matches with invalid positions', data['pos_error2']),
@@ -451,7 +451,7 @@ def update_materialised_views(db_user, db_passwd, db_host, **kwargs):
         # Alert curators
         with smtplib.SMTP(smtp_host) as smtp:
             msg = [
-                'Subject: [CURATORS] MV tables update in progress',
+                'Subject: MV tables update in progress',
                 '',
                 'Dear curators,'
                 ''
