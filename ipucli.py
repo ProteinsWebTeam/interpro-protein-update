@@ -308,7 +308,7 @@ def main():
         Task(
             name='site_match',
             fn=ipu.matches.update_site_matches,
-            requires=['prepare_matches'],
+            requires=['update_matches'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
         ),
