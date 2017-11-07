@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import smtplib
 
 import cx_Oracle
 
@@ -137,51 +136,3 @@ def find_changes(user, passwd, db):
         'deintegrated': deintegrated_methods,
         'new': new_methods
     }
-
-
-def report_changes(changes, host, from_addr, to_addrs):
-    msg = [
-        'Subject: Protein update completed',
-        '',
-        'Below are listed the signature-entry assignments that changed since {}.'.format(changes['date']),
-        '',
-        'Deleted signatures:',
-        '    {:<20}{:<20}'.format('Signature', 'Last entry'),
-        '    ' + '-' * 40
-    ]
-
-    for s in changes['deleted']:
-        msg.append('    {:<20}{:<20}'.format(s['method'], s['last_entry']))
-
-    msg += [
-        '',
-        'Moved signatures',
-        '    {:<20}{:<20}{:<20}'.format('Signatures', 'Original entry', 'New entry'),
-        '    ' + '-' * 60
-    ]
-
-    for s in changes['moved']:
-        msg.append('    {:<20}{:<20}{:<20}'.format(s['method'], s['original_entry'], s['new_entry']))
-
-    msg += [
-        '',
-        'Unintegrated signatures (still in member database)',
-        '    {:<20}{:<20}'.format('Signature', 'Last entry'),
-        '    ' + '-' * 40
-    ]
-
-    for s in changes['deintegrated']:
-        msg.append('    {:<20}{:<20}'.format(s['method'], s['last_entry']))
-
-    msg += [
-        '',
-        'New signatures',
-        '    {:<20}{:<15}{:>10}'.format('Signature', 'Entry', 'TrEMBL count'),
-        '    ' + '-' * 50
-    ]
-
-    for s in changes['new']:
-        msg.append('    {:<20}{:<15}{:>10}'.format(s['method'], s['entry'], s['count']))
-
-    with smtplib.SMTP(host) as smtp:
-        smtp.sendmail(from_addr, to_addrs, '\n'.join(msg) + '\n')

@@ -251,7 +251,7 @@ def main():
         # Update 2
         Task(
             name='prepare_matches',
-            fn=ipu.matches.prepare_update,
+            fn=ipu.matches.prepare_matches,
             requires=['iprscan_check'],
             args=(*db_user_pro, db_host),
             kwargs=dict(
@@ -274,14 +274,32 @@ def main():
         # Update3
         Task(
             name='update_matches',
-            fn=ipu.matches.update,
+            fn=ipu.matches.update_matches,
             requires=['prepare_matches'],
+            args=(*db_user_pro, db_host),
+            lsf=dict(queue=queue),
+        ),
+
+        Task(
+            name='finalize',
+            fn=ipu.matches.finalize,
+            requires=['update_matches'],
+            input=['method_changes'],
             args=(*db_user_pro, db_host),
             kwargs=dict(
                 smtp_host=smtp_host,
                 from_addr=sender,
-                to_addrs=[mail_interpro]
+                to_addrs_1=[mail_interpro],
+                to_addrs_2=[mail_interpro, mail_aa, mail_uniprot],
             ),
+            lsf=dict(queue=queue),
+        ),
+
+        Task(
+            name='refresh_go',
+            fn=ipu.matches.refresh_interpro2go,
+            requires=['finalize'],
+            args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
         ),
 
@@ -291,16 +309,6 @@ def main():
             fn=ipu.proteins.check_crc64,
             requires=['iprscan_check'],
             args=(*db_user_pro, db_host),
-            lsf=dict(queue=queue),
-        ),
-
-        # Mail post update3
-        Task(
-            name='report_method_changes',
-            fn=ipu.methods.report_changes,
-            requires=['update_matches'],
-            input=['method_changes'],
-            args=(smtp_host, sender, [mail_interpro, mail_aa, mail_uniprot]),
             lsf=dict(queue=queue),
         ),
 

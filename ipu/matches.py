@@ -16,12 +16,12 @@ logging.basicConfig(
 )
 
 
-def prepare_update(db_user, db_passwd, db_host, **kwargs):
+def prepare_matches(db_user, db_passwd, db_host, **kwargs):
     smtp_host = kwargs.get('smtp_host')
     from_addr = kwargs.get('from_addr')
     to_addrs = kwargs.get('to_addrs', [])
 
-    add_new(db_user, db_passwd, db_host)
+    add_new_matches(db_user, db_passwd, db_host)
     data = pre_prod(db_user, db_passwd, db_host)
 
     if smtp_host and from_addr and to_addrs:
@@ -99,7 +99,7 @@ def prepare_update(db_user, db_passwd, db_host, **kwargs):
     return data
 
 
-def add_new(user, passwd, db, chunksize=100000):
+def add_new_matches(user, passwd, db, chunksize=100000):
     with cx_Oracle.connect(user, passwd, db) as con:
         con.autocommit = 0
         cur = con.cursor()
@@ -203,6 +203,25 @@ def add_new(user, passwd, db, chunksize=100000):
 
         cur.callproc('INTERPRO.MATCH_NEW_IDX_PROC')
         con.commit()
+
+
+def update_matches(user, passwd, db):
+    with cx_Oracle.connect(user, passwd, db) as con:
+        con.autocommit = 0
+        cur = con.cursor()
+
+        logging.info('deleting old matches')
+        cur.execute('DELETE /*+ PARALLEL */ '
+                    'FROM INTERPRO.MATCH M '
+                    'WHERE EXISTS('
+                    '  SELECT PROTEIN_AC '
+                    '  FROM INTERPRO.PROTEIN_TO_SCAN S '
+                    '  WHERE S.PROTEIN_AC = M.PROTEIN_AC'
+                    ')')
+
+        logging.info('inserting new matches')
+        cur.execute('INSERT /*+ PARALLEL */ INTO INTERPRO.MATCH '
+                    'SELECT * FROM INTERPRO.MATCH_NEW')
 
 
 def pre_prod(user, passwd, db):
@@ -423,31 +442,16 @@ def pre_prod(user, passwd, db):
     }
 
 
-def add(user, passwd, db):
-    with cx_Oracle.connect(user, passwd, db) as con:
-        con.autocommit = 0
-        cur = con.cursor()
-
-        logging.info('deleting old matches')
-        cur.execute('DELETE /*+ PARALLEL */ '
-                    'FROM INTERPRO.MATCH M '
-                    'WHERE EXISTS('
-                    '  SELECT PROTEIN_AC '
-                    '  FROM INTERPRO.PROTEIN_TO_SCAN S '
-                    '  WHERE S.PROTEIN_AC = M.PROTEIN_AC'
-                    ')')
-
-        logging.info('inserting new matches')
-        cur.execute('INSERT /*+ PARALLEL */ INTO INTERPRO.MATCH '
-                    'SELECT * FROM INTERPRO.MATCH_NEW')
-
-
-def update_materialised_views(db_user, db_passwd, db_host, **kwargs):
+def finalize(method_changes, db_user, db_passwd, db_host, **kwargs):
     smtp_host = kwargs.get('smtp_host')
     from_addr = kwargs.get('from_addr')
-    to_addrs = kwargs.get('to_addrs', [])
+    to_addrs_1 = kwargs.get('to_addrs_1', [])
+    to_addrs_2 = kwargs.get('to_addrs_2', [])
 
-    if smtp_host and from_addr and to_addrs:
+    # Splice variants, required for MV tables
+    xref.update_splice_variants(db_user, db_passwd, db_host)
+
+    if smtp_host and from_addr and to_addrs_1:
         # Alert curators
         with smtplib.SMTP(smtp_host) as smtp:
             msg = [
@@ -463,7 +467,7 @@ def update_materialised_views(db_user, db_passwd, db_host, **kwargs):
             ]
 
             msg = '\n'.join(msg) + '\n'
-            smtp.sendmail(from_addr, to_addrs, msg)
+            smtp.sendmail(from_addr, to_addrs_1, msg)
 
     with cx_Oracle.connect(db_user, db_passwd, db_host) as con:
         con.autocommit = 0
@@ -499,7 +503,65 @@ def update_materialised_views(db_user, db_passwd, db_host, **kwargs):
         cur.execute('DROP TABLE INTERPRO.MATCH_STATS_OLD')
         con.commit()
 
-        # For GO
+    # Taxonomy
+    xref.update_taxonomy(db_user, db_passwd, db_host)
+
+    # Send report
+    if smtp_host and from_addr and to_addrs_2:
+        # Alert curators
+        with smtplib.SMTP(smtp_host) as smtp:
+            msg = [
+                'Subject: Protein update completed',
+                '',
+                'Below are listed the signature-entry assignments that changed since {}.'.format(changes['date']),
+                '',
+                'Deleted signatures:',
+                '    {:<20}{:<20}'.format('Signature', 'Last entry'),
+                '    ' + '-' * 40
+            ]
+
+            for s in method_changes['deleted']:
+                msg.append('    {:<20}{:<20}'.format(s['method'], s['last_entry']))
+
+            msg += [
+                '',
+                'Moved signatures',
+                '    {:<20}{:<20}{:<20}'.format('Signatures', 'Original entry', 'New entry'),
+                '    ' + '-' * 60
+            ]
+
+            for s in method_changes['moved']:
+                msg.append('    {:<20}{:<20}{:<20}'.format(s['method'], s['original_entry'], s['new_entry']))
+
+            msg += [
+                '',
+                'Unintegrated signatures (still in member database)',
+                '    {:<20}{:<20}'.format('Signature', 'Last entry'),
+                '    ' + '-' * 40
+            ]
+
+            for s in method_changes['deintegrated']:
+                msg.append('    {:<20}{:<20}'.format(s['method'], s['last_entry']))
+
+            msg += [
+                '',
+                'New signatures',
+                '    {:<20}{:<15}{:>10}'.format('Signature', 'Entry', 'TrEMBL count'),
+                '    ' + '-' * 50
+            ]
+
+            for s in method_changes['new']:
+                msg.append('    {:<20}{:<15}{:>10}'.format(s['method'], s['entry'], s['count']))
+
+            msg = '\n'.join(msg) + '\n'
+            smtp.sendmail(from_addr, to_addrs_2, msg)
+
+
+def refresh_interpro2go(db_user, db_passwd, db_host):
+    with cx_Oracle.connect(db_user, db_passwd, db_host) as con:
+        con.autocommit = 0
+        cur = con.cursor()
+
         logging.info('updating REFRESH_MV_PDB2INTERPRO2GO')
         cur.callproc('INTERPRO.REFRESH_MATCH_COUNTS.REFRESH_MV_PDB2INTERPRO2GO')
         con.commit()
@@ -507,22 +569,6 @@ def update_materialised_views(db_user, db_passwd, db_host, **kwargs):
         logging.info('updating REFRESH_MV_UNIPROT2INTERPRO2GO')
         cur.callproc('INTERPRO.REFRESH_MATCH_COUNTS.REFRESH_MV_UNIPROT2INTERPRO2GO')
         con.commit()
-
-
-def update(db_user, db_passwd, db_host, **kwargs):
-    smtp_host = kwargs.get('smtp_host')
-    from_addr = kwargs.get('from_addr')
-    to_addrs = kwargs.get('to_addrs', [])
-
-    add(db_user, db_passwd, db_host)
-    xref.update_splice_variants(db_user, db_passwd, db_host)
-    update_materialised_views(
-        db_user, db_passwd, db_host,
-        smtp_host=smtp_host,
-        from_addr=from_addr,
-        to_addrs=to_addrs
-    )
-    xref.update_taxonomy(db_user, db_passwd, db_host)
 
 
 def update_site_matches(user, passwd, db):
