@@ -141,7 +141,7 @@ def find_changes(user, passwd, db):
 
 def report_changes(changes, host, from_addr, to_addrs):
     msg = [
-        'Subject: [InterPro-team] Protein update completed',
+        'Subject: Protein update completed',
         '',
         'Below are listed the signature-entry assignments that changed since {}.'.format(changes['date']),
         '',
