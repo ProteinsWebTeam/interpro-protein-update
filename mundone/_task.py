@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import inspect
 import os
 import pickle
 import struct
@@ -113,14 +114,13 @@ class Task:
         self.infile = None
         self.outfile = None
 
-    def start(self, **kwargs):
-        """Start a task.    
-            
-        :param kwargs: keyword arguments (*input*: list of additional parameters to pass to :py:attr:`fn`; *dir*: workdir directory)
+    def pack(self, input_args=list(), workdir=None):
         """
-        input_args = kwargs.get('input', list())
-        workdir = kwargs.get('dir')
 
+        :param input_args:
+        :param workdir:
+        :return:
+        """
         args = input_args + self.args if isinstance(input_args, list) else self.args
 
         try:
@@ -134,15 +134,34 @@ class Task:
         self.outfile = mktemp(suffix='.out.p', dir=workdir)
 
         with open(self.infile, 'wb') as fh:
-            if self.fn.__module__ == '__main__':
-                path = os.path.dirname(sys.argv[0])
-                fh.write(struct.pack('<I{}s'.format(len(path)), len(path), path.encode('utf-8')))
+            module = inspect.getmodule(self.fn)
+            module_path = module.__file__
+            module_name = module.__name__
 
-                d = pickle.dumps((self.fn, args, self.kwargs))
-                module_name = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
-                fh.write(d.replace(b'c__main__', b'c' + module_name.encode('utf-8')))
-            else:
-                fh.write(struct.pack('<I', 0) + pickle.dumps((self.fn, args, self.kwargs)))
+            for _ in range(len(module_name.split('.'))):
+                module_path = os.path.dirname(module_path)
+
+            p = pickle.dumps((self.fn, args, self.kwargs))
+
+            if module.__name__ == '__main__':
+                p = p.replace(b'c__main__', b'c' + module_name.encode())
+
+            fh.write(struct.pack(
+                '<2I{}s{}s'.format(len(module_path), len(module_name)),
+                len(module_path), len(module_name), module_path.encode(), module_name.encode()
+            ))
+
+            fh.write(p)
+
+    def start(self, **kwargs):
+        """Start a task.    
+            
+        :param kwargs: keyword arguments (*input*: list of additional parameters to pass to :py:attr:`fn`; *dir*: workdir directory)
+        """
+        input_args = kwargs.get('input', list())
+        workdir = kwargs.get('dir')
+
+        self.pack(input_args, workdir)
 
         if self.lsf:
             args = ['bsub']

@@ -1,20 +1,21 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
+import importlib
 import pickle
 import struct
 import sys
-sys.path.append(os.getcwd())
 
 
 def main():
     with open(sys.argv[1], 'rb') as fh:
-        strlen, = struct.unpack('<I', fh.read(4))
+        k, l, = struct.unpack('<2I', fh.read(8))
 
-        if strlen:
-            path = struct.unpack('{}s'.format(strlen), fh.read(strlen))[0].decode('utf8')
-            sys.path.append(path)
+        dirname = fh.read(k).decode()
+        module_name = fh.read(l).decode()
+
+        sys.path.append(dirname)
+        importlib.import_module(module_name)
 
         fn, args, kwargs = pickle.loads(fh.read())
 
