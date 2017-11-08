@@ -110,7 +110,7 @@ def refresh_method2swiss(user, passwd, db):
                     "  INTERPRO_ANALYSIS.PROTEIN_DESCRIPTION_VALUE PDV "
                     "WHERE F2P.DB = 'S' "
                     "AND F2P.FEATURE_ID = FS.FEATURE_ID "
-                    "AND FS.DBCODE != 'M' "
+                    "AND FS.DBCODE != 'm' "
                     "AND F2P.SEQ_ID = PDC.PROTEIN_AC "
                     "AND PDC.DESCRIPTION_ID = PDV.DESCRIPTION_ID")
         con.commit()
