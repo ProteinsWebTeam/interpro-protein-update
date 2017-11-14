@@ -635,7 +635,7 @@ def check(db_user_scan, db_passwd_scan, db_user_pro, db_passwd_pro, db_host, **k
                 '{:<20}{:<20}{:<20}{:<20}{:<20}'.format(
                     'Database',
                     'Version (IPRSCAN)',
-                    'Version (IPRO)',
+                    'Version (IPPRO)',
                     'Max UPI (IPRSCAN)',
                     'Max UPI (IPPRO)'
                 ),
