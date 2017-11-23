@@ -177,10 +177,14 @@ class Task:
             if self.lsf.get('cpu') and isinstance(self.lsf['cpu'], int):
                 args += ['-n', str(self.lsf['cpu'])]
 
-            if self.lsf.get('mem') and isinstance(self.lsf['mem'], int):
+            try:
+                mem = int(self.lsf['mem'])
+            except (KeyError, TypeError, ValueError):
+                mem = 100
+            finally:
                 args += [
-                    '-R', 'rusage[mem={}]'.format(self.lsf['mem']),
-                    '-M', str(self.lsf['mem'])
+                    '-R', 'rusage[mem={}]'.format(mem),
+                    '-M', str(mem)
                 ]
 
             if self.lsf.get('tmp') and isinstance(self.lsf['tmp'], int):
