@@ -514,11 +514,7 @@ def refresh(db_user, db_passwd, db_host, **kwargs):
     return True
 
 
-def check(db_user_scan, db_passwd_scan, db_user_pro, db_passwd_pro, db_host, **kwargs):
-    smtp_host = kwargs.get('smtp_host')
-    from_addr = kwargs.get('from_addr')
-    to_addrs = kwargs.get('to_addrs', [])
-
+def protein2scan(db_user_scan, db_passwd_scan, db_user_pro, db_passwd_pro, db_host):
     with cx_Oracle.connect(db_user_scan, db_passwd_scan, db_host) as con:
         con.autocommit = 0
         cur = con.cursor()
@@ -538,7 +534,6 @@ def check(db_user_scan, db_passwd_scan, db_user_pro, db_passwd_pro, db_host, **k
             utils.rebuild_index(cur, db_user_scan, 'MV_IPRSCAN_UPI_METHOD_AN_IDX', hint='PARALLEL 12 NOLOGGING')
         con.commit()
 
-    is_ready = True
     with cx_Oracle.connect(db_user_pro, db_passwd_pro, db_host) as con:
         con.autocommit = 0
         cur = con.cursor()
@@ -571,6 +566,16 @@ def check(db_user_scan, db_passwd_scan, db_user_pro, db_passwd_pro, db_host, **k
             "  WHERE FLAG IN ('N', 'S')"
             ")")
         con.commit()
+
+
+def check(db_user_pro, db_passwd_pro, db_host, **kwargs):
+    smtp_host = kwargs.get('smtp_host')
+    from_addr = kwargs.get('from_addr')
+    to_addrs = kwargs.get('to_addrs', [])
+
+    is_ready = True
+    with cx_Oracle.connect(db_user_pro, db_passwd_pro, db_host) as con:
+        cur = con.cursor()
 
         logging.info('generating IPRSCAN health check report')
         cur.execute("SELECT /*+ PARALLEL */ "
