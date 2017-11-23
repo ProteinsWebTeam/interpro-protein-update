@@ -217,7 +217,6 @@ def main():
             args=(*db_user_scan, db_host),
             kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=[mail_interpro]),
             lsf=dict(queue=queue),
-            skip=True,
         ),
 
         # Refresh IPRSCAN with ISPRO data
@@ -230,14 +229,24 @@ def main():
             skip=True,
         ),
 
+        # Rebuild indexes and refresh PROTEIN_TO_SCAN
+        Task(
+            name='protein2scan',
+            fn=ipu.iprscan.protein2scan,
+            requires=['update_proteins', 'uniparc_xref'],
+            args=(*db_user_scan, *db_user_pro, db_host),
+            lsf=dict(queue=queue),
+        ),
+
         # IPRSCAN check
         Task(
             name='iprscan_check',
             fn=ipu.iprscan.check,
-            requires=['update_proteins', 'uniparc_xref'],
-            args=(*db_user_scan, *db_user_pro, db_host),
+            requires=['protein2scan'],
+            args=(*db_user_pro, db_host),
             kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=[mail_interpro]),
             lsf=dict(queue=queue),
+            skip=True
         ),
 
         # Refresh Method2Swiss
@@ -252,7 +261,7 @@ def main():
         Task(
             name='prepare_matches',
             fn=ipu.matches.prepare_matches,
-            requires=['iprscan_check'],
+            requires=['protein2scan'],
             args=(*db_user_pro, db_host),
             kwargs=dict(
                 smtp_host=smtp_host,
@@ -266,7 +275,7 @@ def main():
         Task(
             name='aa_iprscan',
             fn=ipu.iprscan.recreate_aa_iprscan,
-            requires=['iprscan_check'],
+            requires=['protein2scan'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
         ),
@@ -307,7 +316,7 @@ def main():
         Task(
             name='crc64',
             fn=ipu.proteins.check_crc64,
-            requires=['iprscan_check'],
+            requires=['protein2scan'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
         ),
