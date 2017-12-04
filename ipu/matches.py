@@ -513,7 +513,7 @@ def finalize(method_changes, db_user, db_passwd, db_host, **kwargs):
             msg = [
                 'Subject: Protein update completed',
                 '',
-                'Below are listed the signature-entry assignments that changed since {}.'.format(changes['date']),
+                'Below are listed the signature-entry assignments that changed since {}.'.format(method_changes['date']),
                 '',
                 'Deleted signatures:',
                 '    {:<20}{:<20}'.format('Signature', 'Last entry'),
