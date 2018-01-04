@@ -234,7 +234,7 @@ def main():
             name='protein2scan',
             fn=ipu.iprscan.protein2scan,
             requires=['update_proteins', 'uniparc_xref'],
-            args=(*db_user_scan, *db_user_pro, db_host),
+            args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
         ),
 

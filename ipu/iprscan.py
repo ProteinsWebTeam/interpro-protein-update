@@ -49,6 +49,21 @@ def compare_ispro_ippro(db_user, db_passwd, db_host, **kwargs):
         con.autocommit = 0
         cur = con.cursor()
 
+        indexes = utils.get_indexes(cur, db_user, 'MV_IPRSCAN')
+        is_valid = None
+        for idx in indexes:
+            if idx['name'] == 'MV_IPRSCAN_UPI_METHOD_AN_IDX':
+                is_valid = idx['status'] == 'VALID'
+                break
+
+        if is_valid is None:
+            logging.critical('MV_IPRSCAN_UPI_METHOD_AN_IDX index not found')
+            exit(1)
+        elif not is_valid:
+            logging.info('rebuilding index MV_IPRSCAN_UPI_METHOD_AN_IDX')
+            utils.rebuild_index(cur, db_user, 'MV_IPRSCAN_UPI_METHOD_AN_IDX', hint='PARALLEL 12 NOLOGGING')
+        con.commit()
+
         logging.info("checking UniParc's highest UPI")
         cur.execute('SELECT MAX(UPI) FROM UNIPARC.PROTEIN')
         max_upis['uapro'] = cur.fetchone()[0]
@@ -514,27 +529,8 @@ def refresh(db_user, db_passwd, db_host, **kwargs):
     return True
 
 
-def protein2scan(db_user_scan, db_passwd_scan, db_user_pro, db_passwd_pro, db_host):
-    with cx_Oracle.connect(db_user_scan, db_passwd_scan, db_host) as con:
-        con.autocommit = 0
-        cur = con.cursor()
-
-        indexes = utils.get_indexes(cur, db_user_scan, 'MV_IPRSCAN')
-        is_valid = None
-        for idx in indexes:
-            if idx['name'] == 'MV_IPRSCAN_UPI_METHOD_AN_IDX':
-                is_valid = idx['status'] == 'VALID'
-                break
-
-        if is_valid is None:
-            logging.critical('MV_IPRSCAN_UPI_METHOD_AN_IDX index not found')
-            exit(1)
-        elif not is_valid:
-            logging.info('rebuilding index MV_IPRSCAN_UPI_METHOD_AN_IDX')
-            utils.rebuild_index(cur, db_user_scan, 'MV_IPRSCAN_UPI_METHOD_AN_IDX', hint='PARALLEL 12 NOLOGGING')
-        con.commit()
-
-    with cx_Oracle.connect(db_user_pro, db_passwd_pro, db_host) as con:
+def protein2scan(db_user, db_passwd, db_host):
+    with cx_Oracle.connect(db_user, db_passwd, db_host) as con:
         con.autocommit = 0
         cur = con.cursor()
 
