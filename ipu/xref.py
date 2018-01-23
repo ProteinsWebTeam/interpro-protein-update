@@ -4,6 +4,7 @@
 import datetime
 import logging
 import os
+import smtplib
 
 import cx_Oracle
 
@@ -358,7 +359,11 @@ def update_taxonomy(user, passwd, db):
         con.commit()
 
 
-def dump(user, passwd, db, outdir):
+def dump(user, passwd, db, outdir, **kwargs):
+    smtp_host = kwargs.get('smtp_host')
+    from_addr = kwargs.get('from_addr')
+    to_addrs = kwargs.get('to_addrs', [])
+
     try:
         os.makedirs(outdir)
     except FileExistsError:
@@ -430,6 +435,8 @@ def dump(user, passwd, db, outdir):
 
         logging.info('dumping statistics')
         filename = os.path.join(outdir, 'statistics.txt')
+        # For storing statistics to be emailed to the team
+        msg = 'Subject: interpro.xref_summary@ippro reloaded and the tab files are available\n\n'
 
         try:
             os.rename(filename, os.path.join(outdir, 'statistics.old'))
@@ -453,7 +460,10 @@ def dump(user, passwd, db, outdir):
                         "ORDER BY C.DBCODE, P.DBCODE, X.MATCH_STATUS")
 
             for row in cur:
-                fh.write('|'.join(map(str, row)) + '\n')
+                line = ''
+                line = '|'.join(map(str, row)) + '\n'
+                fh.write(line)
+                msg += line
 
             cur.execute("SELECT /*+ PARALLEL */ "
                         "  C.DBNAME, "
@@ -471,7 +481,14 @@ def dump(user, passwd, db, outdir):
                         "ORDER BY X.DBCODE, P.DBCODE, X.MATCH_STATUS")
 
             for row in cur:
-                fh.write('|'.join(map(str, row)) + '\n')
+                line = ''
+                line = '|'.join(map(str, row)) + '\n'
+                fh.write(line)
+                msg += line
+
+        if smtp_host and from_addr and to_addrs:
+            with smtplib.SMTP(smtp_host) as smtp:
+                smtp.sendmail(from_addr, to_addrs, msg)
 
         # Needed for tabfile headers
         cur.execute("SELECT VERSION, ENTRY_COUNT "

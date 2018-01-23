@@ -336,6 +336,7 @@ def main():
             fn=ipu.xref.dump,
             requires=['update_matches'],
             args=(*db_user_pro, db_host, tabdir),
+            kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=[mail_interpro]),
             lsf=dict(queue=queue),
         )
     ]
