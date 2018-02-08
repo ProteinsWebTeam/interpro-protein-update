@@ -316,26 +316,26 @@ def refresh_mv_iprscan(user, passwd, host, method='C', **kwargs):
 
     tasks = [
         # Member databases
-        Task(fn=_refresh_pct_blast_prodom, args=(user, passwd, host), lsf=dict(name='BLAST_PRODOM'), log=lsf_log),
-        Task(fn=_refresh_pct_gene3d, args=(user, passwd, host), lsf=dict(name='GENE3D'), log=lsf_log),
-        Task(fn=_refresh_pct_hamap, args=(user, passwd, host), lsf=dict(name='HAMAP'), log=lsf_log),
-        Task(fn=_refresh_pct_mobidb_lite, args=(user, passwd, host), lsf=dict(name='MOBIDB_LITE'), log=lsf_log),
-        Task(fn=_refresh_pct_panther, args=(user, passwd, host), lsf=dict(name='PANTHER'), log=lsf_log),
-        Task(fn=_refresh_pct_prosite_patterns, args=(user, passwd, host), lsf=dict(name='PROSITE_PATTERNS'), log=lsf_log),
-        Task(fn=_refresh_pct_pfam, args=(user, passwd, host), lsf=dict(name='PFAM'), log=lsf_log),
-        Task(fn=_refresh_pct_pirsf, args=(user, passwd, host), lsf=dict(name='PIRSF'), log=lsf_log),
-        Task(fn=_refresh_pct_prints, args=(user, passwd, host), lsf=dict(name='PRINTS'), log=lsf_log),
-        Task(fn=_refresh_pct_prosite_profiles, args=(user, passwd, host), lsf=dict(name='PROSITE_PROFILES'), log=lsf_log),
-        Task(fn=_refresh_pct_sfld, args=(user, passwd, host), lsf=dict(name='SFLD'), log=lsf_log),
-        Task(fn=_refresh_pct_smart, args=(user, passwd, host), lsf=dict(name='SMART'), log=lsf_log),
-        Task(fn=_refresh_pct_rpblast, args=(user, passwd, host), lsf=dict(name='RPSBLAST'), log=lsf_log),
-        Task(fn=_refresh_pct_superfamily, args=(user, passwd, host), lsf=dict(name='SUPERFAMILY'), log=lsf_log),
-        Task(fn=_refresh_pct_tigrfam, args=(user, passwd, host), lsf=dict(name='TIGRFAM'), log=lsf_log),
+        Task(fn=_refresh_pct_blast_prodom, args=(user, passwd, host), lsf=dict(name='BLAST_PRODOM', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_gene3d, args=(user, passwd, host), lsf=dict(name='GENE3D', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_hamap, args=(user, passwd, host), lsf=dict(name='HAMAP', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_mobidb_lite, args=(user, passwd, host), lsf=dict(name='MOBIDB_LITE', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_panther, args=(user, passwd, host), lsf=dict(name='PANTHER', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_prosite_patterns, args=(user, passwd, host), lsf=dict(name='PROSITE_PATTERNS', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_pfam, args=(user, passwd, host), lsf=dict(name='PFAM', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_pirsf, args=(user, passwd, host), lsf=dict(name='PIRSF', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_prints, args=(user, passwd, host), lsf=dict(name='PRINTS', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_prosite_profiles, args=(user, passwd, host), lsf=dict(name='PROSITE_PROFILES', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_sfld, args=(user, passwd, host), lsf=dict(name='SFLD', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_smart, args=(user, passwd, host), lsf=dict(name='SMART, queue=queue'), log=lsf_log),
+        Task(fn=_refresh_pct_rpblast, args=(user, passwd, host), lsf=dict(name='RPSBLAST', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_superfamily, args=(user, passwd, host), lsf=dict(name='SUPERFAMILY', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_tigrfam, args=(user, passwd, host), lsf=dict(name='TIGRFAM', queue=queue), log=lsf_log),
         # Non-member databases
-        Task(fn=_refresh_pct_coils, args=(user, passwd, host), lsf=dict(name='COILS'), log=lsf_log),
-        Task(fn=_refresh_pct_phobius, args=(user, passwd, host), lsf=dict(name='PHOBIUS'), log=lsf_log),
-        Task(fn=_refresh_pct_signalp, args=(user, passwd, host), lsf=dict(name='SIGNALP'), log=lsf_log),
-        Task(fn=_refresh_pct_tmhmm, args=(user, passwd, host), lsf=dict(name='TMHMM'), log=lsf_log)
+        Task(fn=_refresh_pct_coils, args=(user, passwd, host), lsf=dict(name='COILS', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_phobius, args=(user, passwd, host), lsf=dict(name='PHOBIUS', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_signalp, args=(user, passwd, host), lsf=dict(name='SIGNALP', queue=queue), log=lsf_log),
+        Task(fn=_refresh_pct_tmhmm, args=(user, passwd, host), lsf=dict(name='TMHMM', queue=queue), log=lsf_log)
     ]
 
     batch = Batch(tasks, dir=workdir)
