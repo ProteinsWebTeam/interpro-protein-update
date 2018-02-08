@@ -27,6 +27,9 @@ class Workflow(object):
     def __init__(self, tasks, **kwargs):
         self.db = kwargs.get('db')
         self.workdir = kwargs.get('dir')
+
+        # todo: implement verification in _init_runs() (check if pickle exists, to see the task' status) and in stop() to not kill tasks
+        self.cascade_kill = kwargs.get('cascade_kill', True)
         self.tasks = {}
 
         try:
