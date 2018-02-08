@@ -12,7 +12,6 @@ from subprocess import Popen, PIPE, DEVNULL
 
 from mundone import _runner
 
-
 STATUS_PENDING = None
 STATUS_RUNNING = 1
 STATUS_SUCCESS = 0
@@ -20,7 +19,7 @@ STATUS_ERROR = 2
 
 
 def mktemp(prefix=None, suffix=None, dir=None, isdir=False):
-    """Convenient wrapper around Python's ``tempfile.mkdtemp()`` and ``tempfile.mkstemp()``. 
+    """Convenient wrapper around Python's ``tempfile.mkdtemp()`` and ``tempfile.mkstemp()``.
     Creates a temporary file or directory.
 
     :param prefix: if *suffix* is not ``None``, the file or directory name will end with that suffix; otherwise there will be no suffix.
@@ -47,15 +46,15 @@ class Task:
     :param kwargs: keywords arguments to pass to :py:attr:`fn`.
     :type kwargs: dict
     :param _kwargs: see below
-    
+
     :Keyword arguments:
         * **name** -- string identifier of the task. Mandatory for :py:class:`Workflow`; otherwise, optional.
         * **requires** -- list of task names that must be successfully completed for this task to start.
-        * **input** -- list of task names whose results are passed to :py:attr:`fn`. 
+        * **input** -- list of task names whose results are passed to :py:attr:`fn`.
         * **lsf** -- dictionary of LSF parameters (*queue*, *mem*, *cpu*, *tmp*).
         * **skip** -- if ``True``, the step is skipped when running the entire workflow.
         * **log** -- if a file path, logs *stdout* and *stderr* in files having *log* as prefix; if ``False``, disables the logging.
-    
+
 
     """
 
@@ -154,8 +153,8 @@ class Task:
             fh.write(p)
 
     def start(self, **kwargs):
-        """Start a task.    
-            
+        """Start a task.
+
         :param kwargs: keyword arguments (*input*: list of additional parameters to pass to :py:attr:`fn`; *dir*: workdir directory)
         """
         input_args = kwargs.get('input', list())
@@ -269,7 +268,7 @@ class Task:
 
     def collect(self):
         """Loads the results from the output Pickle file.
-        
+
         :return: result of :py:attr:`fn`.
         """
         if self.log:
@@ -341,5 +340,5 @@ class Task:
                     'EXIT': STATUS_ERROR,
                     'DONE': STATUS_SUCCESS
                 }.get(status, STATUS_ERROR)
-        # else:
-        #     self.status = _STATUS_PENDING
+                # else:
+                #     self.status = _STATUS_PENDING

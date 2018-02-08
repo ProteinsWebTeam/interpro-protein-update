@@ -2,10 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import os
 import time
-
-from mundone._task import Task
 
 
 logging.basicConfig(

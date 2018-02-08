@@ -329,7 +329,7 @@ class Workflow:
             elif status == tsk.STATUS_RUNNING:
                 tasks_running.append(task_id)
 
-        if to_run_names and isinstance(to_run_names, list) or isinstance(to_run_names, tuple):
+        if to_run_names and (isinstance(to_run_names, list) or isinstance(to_run_names, tuple)):
             # todo move cast at the beginning of the method + support simple strings
             if isinstance(to_run_names, tuple):
                 to_run_names = list(to_run_names)
