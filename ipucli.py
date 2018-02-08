@@ -342,7 +342,7 @@ def main():
     ]
 
     w = Workflow(tasks, dir=tmpdir, db=os.path.join(outdir, 'workflow.db'))
-    w.run(args.tasks, process=(not args.list), incdep=(not args.nodep), secs=60)
+    w.run(args.tasks, process=(not args.list), incdep=(not args.nodep), secs=10)
 
 
 if __name__ == '__main__':
