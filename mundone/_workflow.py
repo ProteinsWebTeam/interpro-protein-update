@@ -418,3 +418,15 @@ class Workflow(object):
             con.commit()
         con.close()
         return to_run_ids
+
+    def stop(self):
+        to_update = []
+        for task_id, task in self.tasks.items():
+            if not task.has_terminated():
+                task.stop()
+                to_update.append((task_id, task.status, None))
+
+        self._update_runs([], to_update)
+
+    def __del__(self):
+        self.stop()
