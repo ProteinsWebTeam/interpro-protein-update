@@ -38,7 +38,7 @@ def mktemp(prefix=None, suffix=None, dir=None, isdir=False):
     return pathname
 
 
-class Task:
+class Task(object):
     """A task object represents a job that must be completed.
 
     :param fn: function to run.

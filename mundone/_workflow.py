@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 
 
-class Workflow:
+class Workflow(object):
     """A workflow object represent a collection of :py:class:`Task` that might depend on each other.
 
     :param tasks: tasks to run.

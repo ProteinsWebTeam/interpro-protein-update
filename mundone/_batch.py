@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 
 
-class Batch:
+class Batch(object):
     """A batch objects represent a collection of independent :py:class:`Task`.
 
     :param tasks: tasks to run.
