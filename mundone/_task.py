@@ -247,6 +247,9 @@ class Task(object):
         elif self.lsf_job_id is not None:
             Popen(['bkill', str(self.lsf_job_id)], stdout=PIPE).communicate()[0].strip().decode()
 
+        self.status = STATUS_ERROR
+        self.clean()
+
     def has_terminated(self):
         """Return `True` if the task has terminated (i.e. is not running anymore).
 
