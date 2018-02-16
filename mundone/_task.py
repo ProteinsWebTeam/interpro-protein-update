@@ -129,8 +129,13 @@ class Task(object):
         except (AttributeError, PermissionError, TypeError):
             workdir = None
 
-        self.infile = mktemp(suffix='.in.p', dir=workdir)
-        self.outfile = mktemp(suffix='.out.p', dir=workdir)
+        if self.name:
+            prefix = self.name + '_'
+        else:
+            prefix = None
+
+        self.infile = mktemp(prefix=prefix, suffix='.in.p', dir=workdir)
+        self.outfile = mktemp(prefix=prefix, suffix='.out.p', dir=workdir)
 
         with open(self.infile, 'wb') as fh:
             module = inspect.getmodule(self.fn)
