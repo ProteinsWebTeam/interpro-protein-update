@@ -27,7 +27,10 @@ def main():
     parser = argparse.ArgumentParser(description='Perform the InterPro Protein Update')
     parser.add_argument('config', metavar='config.ini', help='configuration file')
     parser.add_argument('-t', '--tasks', nargs='*', help='tasks to run')
-    parser.add_argument('-l', '--list', action='store_true', default=False, help='list steps that would be processed, but do not process them')
+    parser.add_argument('-l', '--list', action='store_true', default=False,
+                        help='list steps that would be processed, but do not process them')
+    parser.add_argument('-d', '--detach', action='store_true', default=False,
+                        help='do not wait for tasks to complete (only tasks without dependencies are run)')
     parser.add_argument('--nodep', action='store_true', default=False, help='do not include dependencies (run only the requested tasks)')
     parser.add_argument('--lowmem', action='store_true', default=False, help='optimized for low-resources databases')
     args = parser.parse_args()
@@ -341,8 +344,15 @@ def main():
         )
     ]
 
-    w = Workflow(tasks, dir=tmpdir, db=os.path.join(outdir, 'workflow.db'))
-    w.run(args.tasks, process=(not args.list), incdep=(not args.nodep), secs=10)
+    if args.detatch:
+        secs = 0
+        cascade_kill = False
+    else:
+        secs = 10
+        cascade_kill = True
+
+    w = Workflow(tasks, dir=tmpdir, db=os.path.join(outdir, 'workflow.db'), cascade_kill=cascade_kill)
+    w.run(args.tasks, process=(not args.list), incdep=(not args.nodep), secs=secs)
 
 
 if __name__ == '__main__':
