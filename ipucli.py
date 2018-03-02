@@ -344,7 +344,7 @@ def main():
         )
     ]
 
-    if args.detatch:
+    if args.detach:
         secs = 0
         cascade_kill = False
     else:
