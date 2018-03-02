@@ -233,7 +233,6 @@ class Workflow(object):
             else:
                 break
 
-
     def _update_runs(self, runs_started, runs_terminated):
         """
         
