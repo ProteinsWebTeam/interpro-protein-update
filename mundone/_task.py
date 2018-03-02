@@ -265,7 +265,13 @@ class Task(object):
         if self.status in (STATUS_PENDING, STATUS_RUNNING):
             self._update_status()
 
-        return self.status != STATUS_RUNNING
+        return self.status not in (STATUS_PENDING, STATUS_RUNNING)
+
+    def is_running(self):
+        if self.status in (STATUS_PENDING, STATUS_RUNNING):
+            self._update_status()
+
+        return self.status == STATUS_RUNNING
 
     def is_done(self):
         """Return `True` if the task has successfully terminated.

@@ -456,7 +456,7 @@ class Workflow(object):
         if self.cascade_kill:
             to_update = []
             for task_id, task in self.tasks.items():
-                if not task.has_terminated():
+                if task.is_running():
                     task.stop()
                     to_update.append((task_id, task.status, None))
 
