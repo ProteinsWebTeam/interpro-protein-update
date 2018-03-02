@@ -27,8 +27,6 @@ class Workflow(object):
     def __init__(self, tasks, **kwargs):
         self.db = kwargs.get('db')
         self.workdir = kwargs.get('dir')
-
-        # todo: implement verification in _init_runs() (check if pickle exists, to see the task' status) and in stop() to not kill tasks
         self.cascade_kill = kwargs.get('cascade_kill', True)
         self.tasks = {}
 
@@ -307,6 +305,10 @@ class Workflow(object):
         :return:
         :rtype: list
         """
+
+        if to_run_names and not isinstance(to_run_names, (list, tuple)):
+            to_run_names = [to_run_names]
+
         con = sqlite3.connect(self.db)
         cur = con.cursor()
 
@@ -363,13 +365,9 @@ class Workflow(object):
 
             con.commit()  # commit even if param `commit` is False as we are not creating new runs here
 
-        if to_run_names and (isinstance(to_run_names, list) or isinstance(to_run_names, tuple)):
-            # todo move cast at the beginning of the method + support simple strings
-            if isinstance(to_run_names, tuple):
-                to_run_names = list(to_run_names)
-
+        if to_run_names:
             if not all([isinstance(name, str) for name in to_run_names]):
-                logging.info('invalid name of at least one task (excepts a string)')
+                logging.info('invalid name of at least one task (expects a string)')
                 exit(1)
 
             # Create a list of task IDs to run from the list of task names
