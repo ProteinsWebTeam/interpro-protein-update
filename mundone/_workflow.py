@@ -321,16 +321,47 @@ class Workflow(object):
         # Get the 'active' runs
         tasks_done = []
         tasks_running = []
+        runs_terminated = []
         cur.execute(
-            'SELECT task_id, status '
+            'SELECT task_id, status, infile, outfile '
             'FROM run '
             'WHERE active = 1'
         )
-        for task_id, status in cur:
+        for task_id, status, infile, outfile in cur:
             if status == tsk.STATUS_SUCCESS:
+                # Task completed successfully: tasks depending on this one car run
                 tasks_done.append(task_id)
             elif status == tsk.STATUS_RUNNING:
-                tasks_running.append(task_id)
+                # Is flagged as running in the database...
+                if os.path.isfile(outfile):
+                    # But the output file exists!
+                    could_collect, result = tsk.Task.try_collect(outfile)
+                    if could_collect:
+                        # And we could read it! So we can delete the file and update the database
+                        os.unlink(outfile)
+
+                        if os.path.isfile(infile):
+                            os.unlink(infile)
+
+                        runs_terminated.append((task_id, result))
+                        tasks_done.append(task_id)
+                    else:
+                        # Nope, let's assume the task is still running
+                        tasks_running.append(task_id)
+                else:
+                    tasks_running.append(task_id)
+
+        # Update completed tasks that where still flagged as running in the DB
+        if runs_terminated:
+            for task_id, result in runs_terminated:
+                cur.execute(
+                    "UPDATE run "
+                    "SET status = ?, result = ?, end_time = strftime('%Y-%m-%d %H:%M:%S') "
+                    "WHERE task_id = ? AND active = 1",
+                    (tsk.STATUS_SUCCESS, json.dumps(result), task_id)
+                )
+
+            con.commit()  # commit even if param `commit` is False as we are not creating new runs here
 
         if to_run_names and (isinstance(to_run_names, list) or isinstance(to_run_names, tuple)):
             # todo move cast at the beginning of the method + support simple strings
@@ -423,13 +454,14 @@ class Workflow(object):
         return to_run_ids
 
     def stop(self):
-        to_update = []
-        for task_id, task in self.tasks.items():
-            if not task.has_terminated():
-                task.stop()
-                to_update.append((task_id, task.status, None))
+        if self.cascade_kill:
+            to_update = []
+            for task_id, task in self.tasks.items():
+                if not task.has_terminated():
+                    task.stop()
+                    to_update.append((task_id, task.status, None))
 
-        self._update_runs([], to_update)
+            self._update_runs([], to_update)
 
     def __del__(self):
         self.stop()

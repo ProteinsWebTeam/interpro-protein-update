@@ -136,6 +136,7 @@ class Task(object):
 
         self.infile = mktemp(prefix=prefix, suffix='.in.p', dir=workdir)
         self.outfile = mktemp(prefix=prefix, suffix='.out.p', dir=workdir)
+        os.unlink(self.outfile)  # delete output file as we only want it to exist when task is done
 
         with open(self.infile, 'wb') as fh:
             module = inspect.getmodule(self.fn)
@@ -273,6 +274,20 @@ class Task(object):
         :rtype: bool
         """
         return self.status == STATUS_SUCCESS
+
+    @staticmethod
+    def try_collect(filepath):
+        result = None
+        success = False
+        try:
+            with open(filepath, 'rb') as fh:
+                result = pickle.load(fh)
+        except Exception:
+            pass
+        else:
+            success = True
+        finally:
+            return success, result
 
     def collect(self):
         """Loads the results from the output Pickle file.
