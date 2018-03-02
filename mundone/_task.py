@@ -242,7 +242,7 @@ class Task(object):
                 self.log = (out, err)
 
             self.proc = Popen(args, stdout=out, stderr=err)
-            self.status = STATUS_PENDING
+            self.status = STATUS_RUNNING
 
     def stop(self):
         """Stops the task by killing the running process.
@@ -265,7 +265,7 @@ class Task(object):
         if self.status in (STATUS_PENDING, STATUS_RUNNING):
             self._update_status()
 
-        return self.status in (STATUS_SUCCESS, STATUS_ERROR)
+        return self.status != STATUS_RUNNING
 
     def is_done(self):
         """Return `True` if the task has successfully terminated.
@@ -358,10 +358,10 @@ class Task(object):
                 pass
             finally:
                 self.status = {
-                    'PEND': STATUS_PENDING,
+                    # Not a mistake! A pending task is not ready to run:
+                    # only running (i.e. ready) tasks can be submitted
+                    'PEND': STATUS_RUNNING,
                     'RUN': STATUS_RUNNING,
                     'EXIT': STATUS_ERROR,
                     'DONE': STATUS_SUCCESS
                 }.get(status, STATUS_ERROR)
-                # else:
-                #     self.status = _STATUS_PENDING

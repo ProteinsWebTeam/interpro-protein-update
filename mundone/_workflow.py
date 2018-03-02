@@ -271,10 +271,9 @@ class Workflow(object):
         runs = {}
         con = sqlite3.connect(self.db)
         cur = con.cursor()
-        cur.execute('SELECT task.id, run.status, run.result '
-                    'FROM task '
-                    'INNER JOIN run ON task.id = run.task_id '
-                    'WHERE run.active = 1')
+        cur.execute('SELECT task_id, status, result '
+                    'FROM run '
+                    'WHERE active = 1')
 
         for task_id, status, result in cur:
             try:
