@@ -224,12 +224,15 @@ class Workflow(object):
                         logging.info("task '{}' is now running".format(task.name))
                         runs_started.append((task_id, task.infile, task.outfile))
 
-            self.active = keep_running
-
             if runs_started or runs_terminated:
                 self._update_runs(runs_started, runs_terminated)
 
-            time.sleep(secs)
+            if secs:
+                self.active = keep_running
+                time.sleep(secs)
+            else:
+                break
+
 
     def _update_runs(self, runs_started, runs_terminated):
         """
