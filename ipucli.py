@@ -148,19 +148,22 @@ def main():
             name='load_swissprot',
             fn=ipu.proteins.read_flat_file,
             args=(swissprot_file, os.path.join(outdir, 'swiss.h5')),
-            lsf=dict(queue=queue, mem=500)
+            lsf=dict(queue=queue, mem=500),
+            log=os.path.join(outdir, 'load_swissprot')
         ),
         Task(
             name='load_trembl',
             fn=ipu.proteins.read_flat_file,
             args=(trembl_file, os.path.join(outdir, 'trembl.h5')),
-            lsf=dict(queue=queue, mem=16000)
+            lsf=dict(queue=queue, mem=16000),
+            log=os.path.join(outdir, 'load_trembl')
         ),
         Task(
             name='dump_db',
             fn=ipu.proteins.dump_proteins,
             args=(*db_user_pro, db_host, os.path.join(outdir, 'db.h5')),
-            lsf=dict(queue=queue, mem=10000)
+            lsf=dict(queue=queue, mem=10000),
+            log=os.path.join(outdir, 'dump_db')
         ),
         Task(
             name='merge_h5',
@@ -171,6 +174,7 @@ def main():
                 os.path.join(outdir, 'uniprot.h5')
             ),
             lsf=dict(queue=queue, mem=3000),
+            log=os.path.join(outdir, 'merge_h5')
         ),
         Task(
             name='insert_proteins',
@@ -184,6 +188,7 @@ def main():
             ),
             kwargs=dict(chunksize=100000),
             lsf=dict(queue=queue, mem=16000),
+            log=os.path.join(outdir, 'insert_proteins')
         ),
         Task(
             name='method_changes',
@@ -191,6 +196,7 @@ def main():
             requires=['insert_proteins'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'method_changes')
         ),
 
         # Update UniParc.xref table
@@ -199,7 +205,8 @@ def main():
             fn=ipu.xref.refresh_uniparc,
             args=(*(db_user_parc if args.lowmem else db_user_pro), db_host),
             kwargs=dict(useproc=not args.lowmem),
-            lsf=dict(queue=queue)
+            lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'uniparc_xref')
         ),
 
         # Update 1B
@@ -211,6 +218,7 @@ def main():
             args=(*db_user_pro, db_host, uniprot_version, uniprot_date),
             kwargs=dict(outdir=outdir, workdir=tmpdir, queue=queue, iter=not args.lowmem),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'update_proteins')
         ),
 
         # IPRSCAN is ready
@@ -220,6 +228,7 @@ def main():
             args=(*db_user_scan, db_host),
             kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=[mail_interpro]),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'iprscan_precheck')
         ),
 
         # Refresh IPRSCAN with ISPRO data
@@ -230,6 +239,7 @@ def main():
             kwargs=dict(method='C', parallel=6, queue=queue, workdir=tmpdir, log=True),
             lsf=dict(queue=queue),
             skip=True,
+            log=os.path.join(outdir, 'iprscan_refresh')
         ),
 
         # Rebuild indexes and refresh PROTEIN_TO_SCAN
@@ -239,6 +249,7 @@ def main():
             requires=['update_proteins', 'uniparc_xref'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'protein2scan')
         ),
 
         # IPRSCAN check
@@ -258,6 +269,7 @@ def main():
             fn=ipu.xref.refresh_method2swiss,
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'method2swiss')
         ),
 
         # Update 2
@@ -272,6 +284,7 @@ def main():
                 to_addrs=[mail_interpro, mail_aa]
             ),
             lsf=dict(queue=queue, mem=4000),  # add_new() requires ~500M, but pre_prod might require more
+            log=os.path.join(outdir, 'prepare_matches')
         ),
 
         # Refresh AA_IPRSCAN
@@ -281,6 +294,7 @@ def main():
             requires=['protein2scan'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'aa_iprscan')
         ),
 
         # Update3
@@ -290,6 +304,7 @@ def main():
             requires=['prepare_matches'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'update_matches')
         ),
 
         Task(
@@ -305,6 +320,7 @@ def main():
                 to_addrs_2=[mail_interpro, mail_aa, mail_uniprot],
             ),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'finalize')
         ),
 
         Task(
@@ -313,6 +329,7 @@ def main():
             requires=['finalize'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'refresh_go')
         ),
 
         # Check CRC64
@@ -322,6 +339,7 @@ def main():
             requires=['protein2scan'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'crc64')
         ),
 
         # Update site_matches
@@ -331,6 +349,7 @@ def main():
             requires=['update_matches'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'site_match')
         ),
 
         # XREF summary
@@ -341,6 +360,7 @@ def main():
             args=(*db_user_pro, db_host, tabdir),
             kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=[mail_interpro]),
             lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'dump_xref')
         )
     ]
 
