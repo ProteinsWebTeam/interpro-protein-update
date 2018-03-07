@@ -202,6 +202,13 @@ class Task(object):
                 ]
             elif self.log is not None:
                 out, err = self.log
+
+                if os.path.isfile(out):
+                    os.unlink(out)
+
+                if os.path.isfile(err):
+                    os.unlink(err)
+
                 args += [
                     '-o', out,
                     '-e', err,
