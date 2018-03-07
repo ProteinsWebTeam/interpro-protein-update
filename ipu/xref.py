@@ -30,7 +30,10 @@ def refresh_uniparc(user, passwd, db, useproc=True):
             cur.callproc('UNIPARC.REFRESH_XREF')
         else:
             logging.info('dropping UNIPARC.XREF_OLD')
-            cur.execute('DROP TABLE UNIPARC.XREF_OLD')
+            try:
+                cur.execute('DROP TABLE UNIPARC.XREF_OLD')
+            except cx_Oracle.DatabaseError:
+                pass  # Prevent ORA-00942 (table or view does not exist) to be raised
 
             logging.info('recreating UNIPARC.XREF_NEW')
             cur.execute('CREATE TABLE xref_new TABLESPACE uniparc_tab AS SELECT upi, ac, dbid, deleted, version FROM UNIPARC.xref@UAREAD')
@@ -62,7 +65,10 @@ def refresh_uniparc(user, passwd, db, useproc=True):
             cur.execute('GRANT SELECT ON UNIPARC.XREF TO PUBLIC')
 
             logging.info('dropping UNIPARC.CV_DATABASE')
-            cur.execute('DROP TABLE UNIPARC.CV_DATABASE')
+            try:
+                cur.execute('DROP TABLE UNIPARC.CV_DATABASE')
+            except cx_Oracle.DatabaseError:
+                pass  # Prevent ORA-00942 (table or view does not exist) to be raised
 
             logging.info('recreating UNIPARC.CV_DATABASE')
             cur.execute('CREATE TABLE UNIPARC.CV_DATABASE TABLESPACE UNIPARC_TAB AS SELECT * FROM UNIPARC.CV_DATABASE@UAREAD')
