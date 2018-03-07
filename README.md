@@ -256,3 +256,7 @@ python ipucli.py -c CONFIG -t [TASK [TASK ...]]
 ```
 
 Where `CONFIG` is the path to the configuration file, and `TASK` are task names.
+
+## Notes
+
+* `UNIPARC.PROTEIN` is a materialised view and is not refreshed by this pipeline but by DBMS scheduler (in Oracle SQL Developer: Scheduler > DBMS Jobs, under the *DBA Jobs* tab).
