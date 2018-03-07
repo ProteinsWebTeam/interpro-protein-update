@@ -336,7 +336,7 @@ def main():
         Task(
             name='crc64',
             fn=ipu.proteins.check_crc64,
-            requires=['protein2scan'],
+            requires=['update_proteins', 'uniparc_xref'],
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
             log=os.path.join(outdir, 'crc64')
