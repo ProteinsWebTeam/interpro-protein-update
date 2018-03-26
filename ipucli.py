@@ -72,14 +72,31 @@ def main():
     except KeyError:
         logging.critical("could not parse the 'database' section")
         exit(1)
-    except ValueError:
-        logging.critical("wrong format for 'user_pro', 'user_scan' or 'user_parc' (expect user/password)")
+
+    if len(db_user_pro) != 2:
+        logging.critical("wrong format for 'user_pro' (expect user/password)")
+        exit(1)
+    elif len(db_user_scan) != 2:
+        logging.critical("wrong format for 'user_scan' (expect user/password)")
         exit(1)
 
-    try:
-        db_user_parc = config['database']['user_parc'].split('/', 1)
-    except (KeyError, ValueError):
-        db_user_parc = None
+    if args.lowmem:
+        # user_parc is only used when the --lowmem option is ON (and this option should not be ON in production)
+        try:
+            db_user_parc = config['database']['user_parc'].split('/', 1)
+        except KeyError:
+            logging.critical("could not parse the 'user_parc' section")
+            exit(1)
+
+        if len(db_user_parc) != 2:
+            logging.critical("wrong format for 'user_parc' (expect user/password)")
+            exit(1)
+        elif not ipu.utils.test_con(*db_user_parc, db_host):
+            username, password = db_user_parc
+            logging.critical('could not create a connection with {}/{}@{}'.format(
+                username, '*' * len(password), db_host)
+            )
+            exit(1)
 
     # Test database connection
     if not ipu.utils.test_con(*db_user_pro, db_host):
