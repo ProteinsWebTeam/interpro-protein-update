@@ -268,3 +268,10 @@ def rebuild_index(cursor, owner, name, hint=''):
         return False
     else:
         return True
+
+
+def grant(cursor, privilege, table, grantees):
+    if isinstance(grantees, (list, tuple)):
+        grantees = ','.join(grantees)
+
+    cursor.execute('GRANT {} ON {} TO {}'.format(privilege, table, grantees))

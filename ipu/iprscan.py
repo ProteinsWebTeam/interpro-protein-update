@@ -765,21 +765,14 @@ def recreate_aa_iprscan(user, passwd, db):
         cur.execute('CREATE INDEX IX_MV_IPRSCAN_SIG ON IPRSCAN.AA_IPRSCAN(SIGNATURE)')
 
         # Allow access for Kraken user to the view
-        cur.execute('GRANT SELECT ON IPRSCAN.AA_IPRSCAN TO KRAKEN')
-        con.commit()
-    grant_permission(user, passwd, db)
+        utils.grant(cur, 'SELECT', 'IPRSCAN.AA_IPRSCAN', 'KRAKEN')
 
-
-def grant_permission(user, passwd, db):
-    with cx_Oracle.connect(user, passwd, db) as con:
-        cur = con.cursor()
-
-        logging.info('grant permission to iprscan tables to interpro_select')
-        cur.execute('GRANT SELECT ON IPRSCAN.MV_PROFILE_SCAN_MATCH TO INTERPRO_SELECT')
-        cur.execute('GRANT SELECT ON IPRSCAN.MV_PROFILE_SCAN_LOCATION TO INTERPRO_SELECT')
-        cur.execute('GRANT SELECT ON IPRSCAN.MV_PATTERN_SCAN_MATCH TO INTERPRO_SELECT')
-        cur.execute('GRANT SELECT ON IPRSCAN.MV_PATTERN_SCAN_LOCATION TO INTERPRO_SELECT')
-        cur.execute('GRANT SELECT ON IPRSCAN.MV_SIGNATURE TO INTERPRO_SELECT')
+        # Extra grants for INTERPRO_SELECT
+        utils.grant(cur, 'SELECT', 'IPRSCAN.MV_PROFILE_SCAN_MATCH', 'INTERPRO_SELECT')
+        utils.grant(cur, 'SELECT', 'IPRSCAN.MV_PROFILE_SCAN_LOCATION', 'INTERPRO_SELECT')
+        utils.grant(cur, 'SELECT', 'IPRSCAN.MV_PATTERN_SCAN_MATCH', 'INTERPRO_SELECT')
+        utils.grant(cur, 'SELECT', 'IPRSCAN.MV_PATTERN_SCAN_LOCATION', 'INTERPRO_SELECT')
+        utils.grant(cur, 'SELECT', 'IPRSCAN.MV_SIGNATURE', 'INTERPRO_SELECT')
 
 
 def _refresh_pct_blast_prodom(user, passwd, db):
