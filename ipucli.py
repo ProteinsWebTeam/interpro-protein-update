@@ -23,6 +23,10 @@ logging.basicConfig(
 )
 
 
+def parse_addrs(s):
+    return [addr.strip() for addr in s.split(',') if len(addr.strip())]
+
+
 def main():
     parser = argparse.ArgumentParser(description='Perform the InterPro Protein Update')
     parser.add_argument('config', metavar='config.ini', help='configuration file')
@@ -151,9 +155,9 @@ def main():
     try:
         smtp_host = config['mail']['server']
         sender = config['mail']['sender']
-        mail_interpro = config['mail']['interpro']
-        mail_aa = config['mail']['aa']
-        mail_uniprot = config['mail']['uniprot']
+        mail_interpro = parse_addrs(config['mail']['interpro'])
+        mail_aa = parse_addrs(config['mail']['aa'])
+        mail_uniprot = parse_addrs(config['mail']['uniprot'])
     except KeyError:
         logging.critical("could not parse the 'mail' section")
         exit(1)
@@ -243,7 +247,7 @@ def main():
             name='iprscan_precheck',
             fn=ipu.iprscan.compare_ispro_ippro,
             args=(*db_user_scan, db_host),
-            kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=[mail_interpro]),
+            kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=mail_interpro),
             lsf=dict(queue=queue),
             log=os.path.join(outdir, 'iprscan_precheck')
         ),
@@ -275,7 +279,7 @@ def main():
             fn=ipu.iprscan.check,
             requires=['protein2scan'],
             args=(*db_user_pro, db_host),
-            kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=[mail_interpro]),
+            kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=mail_interpro),
             lsf=dict(queue=queue),
             skip=True
         ),
@@ -298,7 +302,7 @@ def main():
             kwargs=dict(
                 smtp_host=smtp_host,
                 from_addr=sender,
-                to_addrs=[mail_interpro, mail_aa]
+                to_addrs=mail_interpro + mail_aa
             ),
             lsf=dict(queue=queue, mem=4000),  # add_new() requires ~500M, but pre_prod might require more
             log=os.path.join(outdir, 'prepare_matches')
@@ -333,8 +337,8 @@ def main():
             kwargs=dict(
                 smtp_host=smtp_host,
                 from_addr=sender,
-                to_addrs_1=[mail_interpro],
-                to_addrs_2=[mail_interpro, mail_aa, mail_uniprot],
+                to_addrs_1=mail_interpro,
+                to_addrs_2=mail_interpro + mail_aa + mail_uniprot,
             ),
             lsf=dict(queue=queue),
             log=os.path.join(outdir, 'finalize')
@@ -375,7 +379,7 @@ def main():
             fn=ipu.xref.dump,
             requires=['update_matches'],
             args=(*db_user_pro, db_host, tabdir),
-            kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=[mail_interpro]),
+            kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=mail_interpro),
             lsf=dict(queue=queue),
             log=os.path.join(outdir, 'dump_xref')
         )
