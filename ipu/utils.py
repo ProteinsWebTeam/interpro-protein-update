@@ -4,7 +4,9 @@
 import datetime
 import logging
 import os
+import smtplib
 import tempfile
+from email.message import EmailMessage
 from subprocess import Popen, PIPE
 
 import cx_Oracle
@@ -15,6 +17,22 @@ logging.basicConfig(
     format='%(asctime)s: %(levelname)s: %(message)s',
     datefmt='%y-%m-%d %H:%M:%S'
 )
+
+
+def sendmail(server, subject, content, from_addr, to_addrs):
+    msg = EmailMessage()
+    msg.set_content(content)
+
+    msg['Subject'] = subject
+    msg['From'] = from_addr
+
+    if isinstance(to_addrs, (list, tuple)):
+        msg['To'] = ', '.join(set(to_addrs))
+    else:
+        msg['To'] = to_addrs
+
+    with smtplib.SMTP(server) as s:
+        s.send_message(msg)
 
 
 def test_con(user, password, host):

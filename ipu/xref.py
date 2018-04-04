@@ -4,9 +4,10 @@
 import datetime
 import logging
 import os
-import smtplib
 
 import cx_Oracle
+
+from . import utils
 
 
 logging.basicConfig(
@@ -441,14 +442,14 @@ def dump(user, passwd, db, outdir, **kwargs):
 
         logging.info('dumping statistics')
         filename = os.path.join(outdir, 'statistics.txt')
-        # For storing statistics to be emailed to the team
-        msg = 'Subject: interpro.xref_summary@ippro reloaded and the tab files are available\n\n'
 
         try:
             os.rename(filename, os.path.join(outdir, 'statistics.old'))
         except FileNotFoundError:
             pass
 
+        # For storing statistics to be emailed to the team
+        content = ''
         with open(filename, 'wt') as fh:
             cur.execute("SELECT /*+ PARALLEL */ "
                         "  C.DBNAME, "
@@ -466,10 +467,9 @@ def dump(user, passwd, db, outdir, **kwargs):
                         "ORDER BY C.DBCODE, P.DBCODE, X.MATCH_STATUS")
 
             for row in cur:
-                line = ''
                 line = '|'.join(map(str, row)) + '\n'
                 fh.write(line)
-                msg += line
+                content += line
 
             cur.execute("SELECT /*+ PARALLEL */ "
                         "  C.DBNAME, "
@@ -487,14 +487,17 @@ def dump(user, passwd, db, outdir, **kwargs):
                         "ORDER BY X.DBCODE, P.DBCODE, X.MATCH_STATUS")
 
             for row in cur:
-                line = ''
                 line = '|'.join(map(str, row)) + '\n'
                 fh.write(line)
-                msg += line
+                content += line
 
         if smtp_host and from_addr and to_addrs:
-            with smtplib.SMTP(smtp_host) as smtp:
-                smtp.sendmail(from_addr, to_addrs, msg)
+            utils.sendmail(
+                server=smtp_host,
+                subject='interpro.xref_summary@ippro reloaded and the tab files are available',
+                content=content,
+                from_addr=from_addr, to_addrs=to_addrs
+            )
 
         # Needed for tabfile headers
         cur.execute("SELECT VERSION, ENTRY_COUNT "

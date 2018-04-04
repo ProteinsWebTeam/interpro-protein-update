@@ -3,7 +3,6 @@
 
 import logging
 import os
-import smtplib
 
 import cx_Oracle
 from mundone import Batch, Task
@@ -218,36 +217,38 @@ def compare_ispro_ippro(db_user, db_passwd, db_host, **kwargs):
                 non_mem_db_out += line
 
     if smtp_host and from_addr and to_addrs:
-        with smtplib.SMTP(smtp_host) as smtp:
-            msg = [
-                'Subject: ISPRO/{} status report'.format(db_host.upper()),
+        content = [
+            'Max UPI in UniParc',
+            '------------------',
+            '',
+            '  - UAPRO:   {}'.format(max_upis['uapro']),
+            '  - UAREAD:  {}'.format(max_upis['uaread']),
+            '',
+            'Analysis',
+            '--------',
+            '',
+            'Member databases:',
+            mem_db_out,
+            'Non-member databases:',
+            non_mem_db_out
+        ]
+
+        if to_refresh:
+            content += [
                 '',
-                'Max UPI in UniParc',
-                '------------------',
-                '',
-                '  - UAPRO:   {}'.format(max_upis['uapro']),
-                '  - UAREAD:  {}'.format(max_upis['uaread']),
-                '',
-                'Analysis',
-                '--------',
-                '',
-                'Member databases:',
-                mem_db_out,
-                'Non-member databases:',
-                non_mem_db_out
+                'The following tables have to be refreshed:'
             ]
 
-            if to_refresh:
-                msg += [
-                    '',
-                    'The following tables have to be refreshed:'
-                ]
+            for table in to_refresh:
+                content.append('  - ' + table['name'])
 
-                for table in to_refresh:
-                    msg.append('  - ' + table['name'])
-
-            msg = '\n'.join(msg) + '\n'
-            smtp.sendmail(from_addr, to_addrs, msg)
+        utils.sendmail(
+            server=smtp_host,
+            subject='ISPRO/{} status report'.format(db_host.upper()),
+            content='\n'.join(content) + '\n',
+            from_addr=from_addr,
+            to_addrs=to_addrs
+        )
 
     return is_ready
 
@@ -621,55 +622,58 @@ def check(db_user_pro, db_passwd_pro, db_host, **kwargs):
 
     if smtp_host and from_addr and to_addrs:
         # Report IPRSCAN health check
-        with smtplib.SMTP(smtp_host) as smtp:
-            try:
-                db_name = db_host.rsplit('/', 1)[1]
-            except IndexError:
-                db_name = db_host
+        try:
+            db_name = db_host.rsplit('/', 1)[1]
+        except IndexError:
+            db_name = db_host
 
-            msg = [
-                'Subject: IPRSCAN Health Check on {}'.format(db_name),
+        content = [
+            'Subject: IPRSCAN Health Check on {}'.format(db_name),
+            '',
+            'IPRSCAN Health Check',
+            '--------------------',
+            '',
+            '{:<20}{:<20}{:<20}{:<20}{:<20}'.format(
+                'Database',
+                'Version (IPRSCAN)',
+                'Version (IPPRO)',
+                'Max UPI (IPRSCAN)',
+                'Max UPI (IPPRO)'
+            ),
+            '-' * 100,
+            ''
+        ]
+
+        for db in sorted(results, key=lambda x: x['ippro_db']):
+            content.append('{:<20}{:<20}{:<20}{:<20}{:<20}'.format(
+                db['iprscan_db'],
+                db['iprscan_version'],
+                db['ippro_version'],
+                db['iprscan_upi'],
+                db['ippro_upi']
+            ))
+
+        if is_ready:
+            content += [
                 '',
-                'IPRSCAN Health Check',
-                '--------------------',
+                'Everything looks OK.'
+            ]
+        else:
+            content += [
                 '',
-                '{:<20}{:<20}{:<20}{:<20}{:<20}'.format(
-                    'Database',
-                    'Version (IPRSCAN)',
-                    'Version (IPPRO)',
-                    'Max UPI (IPRSCAN)',
-                    'Max UPI (IPPRO)'
-                ),
-                '-' * 100,
-                ''
+                'There\'s something fishy.',
+                'Check that all member databases are included, '
+                'that the versions between IPRSCAN and IPPRO are the same, '
+                'and IPRSCAN\'s UPI are greater than or equal to IPPRO\'s.'
             ]
 
-            for db in sorted(results, key=lambda x: x['ippro_db']):
-                msg.append('{:<20}{:<20}{:<20}{:<20}{:<20}'.format(
-                    db['iprscan_db'],
-                    db['iprscan_version'],
-                    db['ippro_version'],
-                    db['iprscan_upi'],
-                    db['ippro_upi']
-                ))
-
-            if is_ready:
-                msg += [
-                    '',
-                    'Everything looks OK.',
-                    ''
-                ]
-            else:
-                msg += [
-                    '',
-                    'There\'s something fishy.',
-                    'Check that all member databases are included, '
-                    'that the versions between IPRSCAN and IPPRO are the same, '
-                    'and IPRSCAN\'s UPI are greater than or equal to IPPRO\'s.',
-                    ''
-                ]
-
-            smtp.sendmail(from_addr, to_addrs, '\n'.join(msg))
+        utils.sendmail(
+            server=smtp_host,
+            subject='IPRSCAN Health Check on {}'.format(db_name),
+            content='\n'.join(content) + '\n',
+            from_addr=from_addr,
+            to_addrs=to_addrs
+        )
 
     if not is_ready:
         logging.critical('IPRSCAN does not look ready')
