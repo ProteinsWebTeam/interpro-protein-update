@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
-import smtplib
 
 import cx_Oracle
 
-from . import xref
+from . import utils, xref
 
 
 logging.basicConfig(
@@ -25,9 +24,7 @@ def prepare_matches(db_user, db_passwd, db_host, **kwargs):
     data = pre_prod(db_user, db_passwd, db_host)
 
     if smtp_host and from_addr and to_addrs:
-        msg = [
-            'Subject: Report from InterPro protein update',
-            '',
+        content = [
             '{:<30}{:>10}'.format('Matches out of bounds', data['pos_error1']),
             '{:<30}{:>10}'.format('Matches with invalid positions', data['pos_error2']),
             '{:<30}{:>10}'.format('Matches on deleted proteins', data['missing_proteins']),
@@ -43,8 +40,9 @@ def prepare_matches(db_user, db_passwd, db_host, **kwargs):
         ]
 
         for m in data['case3']:
-            msg.append(
-                ' ' * 8 + '{:<20}{:<20}{:<10}{:<10}'.format(m['protein'], m['method'], m['pos_from'], m['pos_to']))
+            content.append(
+                ' ' * 8 + '{:<20}{:<20}{:<10}{:<10}'.format(m['protein'], m['method'], m['pos_from'], m['pos_to'])
+            )
 
         """
         smtplib encodes with ascii, which fails to encode '±'.
@@ -52,7 +50,7 @@ def prepare_matches(db_user, db_passwd, db_host, **kwargs):
         >>> msg = MIMEText(message, _charset='UTF-8')
         >>> msg['Subject'] = Header(subject, 'utf-8')
         """
-        msg += [
+        content += [
             '',
             '{:<50}{:>10}'.format('Signatures with UniProt for the first time', data['new']),
             '{:<50}{:>10}'.format('Signatures without UniProt matches', data['methods_without_match']),
@@ -71,9 +69,11 @@ def prepare_matches(db_user, db_passwd, db_host, **kwargs):
             else:
                 p = str(round(p, 1)) + '%'
             finally:
-                msg.append('    {:<15}{:>15}{:>15}{:>15}{:>15}'.format(e['entry'], e['old'], e['new'], p, e['checked']))
+                content.append(
+                    '    {:<15}{:>15}{:>15}{:>15}{:>15}'.format(e['entry'], e['old'], e['new'], p, e['checked'])
+                )
 
-        msg += [
+        content += [
             '',
             'Database count changes',
             '    {:<10}{:<20}{:<20}{:<15}'.format('Code', 'Database', 'Previous count', 'New count'),
@@ -81,9 +81,9 @@ def prepare_matches(db_user, db_passwd, db_host, **kwargs):
         ]
 
         for db in sorted(data['db_changes'], key=lambda x: x['name']):
-            msg.append('    {:<10}{:<20}{:<20}{:<15}'.format(db['code'], db['name'], db['old'], db['new']))
+            content.append('    {:<10}{:<20}{:<20}{:<15}'.format(db['code'], db['name'], db['old'], db['new']))
 
-        msg += [
+        content += [
             '',
             'Signatures not in the METHOD table having matches',
             '    Signature',
@@ -91,10 +91,15 @@ def prepare_matches(db_user, db_passwd, db_host, **kwargs):
         ]
 
         for ac in data['missing_methods']:
-            msg.append('    {:<20}'.format(ac))
+            content.append('    {:<20}'.format(ac))
 
-        with smtplib.SMTP(smtp_host) as smtp:
-            smtp.sendmail(from_addr, to_addrs, '\n'.join(msg) + '\n')
+        utils.sendmail(
+            server=smtp_host,
+            subject='Report from InterPro protein update',
+            content='\n'.join(content) + '\n',
+            from_addr=from_addr,
+            to_addrs=to_addrs
+        )
 
     return data
 
@@ -445,29 +450,31 @@ def pre_prod(user, passwd, db):
 def finalize(method_changes, db_user, db_passwd, db_host, **kwargs):
     smtp_host = kwargs.get('smtp_host')
     from_addr = kwargs.get('from_addr')
-    to_addrs_1 = kwargs.get('to_addrs_1', [])
-    to_addrs_2 = kwargs.get('to_addrs_2', [])
+    to_addrs_1 = kwargs.get('to_addrs_1', [])  # internal email (curators)
+    to_addrs_2 = kwargs.get('to_addrs_2', [])  # "public" email (UniProt, etc.)
 
     # Splice variants, required for MV tables
     xref.update_splice_variants(db_user, db_passwd, db_host)
 
     if smtp_host and from_addr and to_addrs_1:
         # Alert curators
-        with smtplib.SMTP(smtp_host) as smtp:
-            msg = [
-                'Subject: MV tables update in progress',
-                '',
-                'Dear curators,'
-                ''
-                'Please log out of talisman. MV tables are being updated. '
-                'The internal InterPro website may not function properly. '
-                'This will take approximately 20 hours and you will be notified when this has completed.',
-                '',
-                'Thank you'
-            ]
+        content = [
+            'Dear curators,'
+            ''
+            'Please log out of talisman. MV tables are being updated. '
+            'The internal InterPro website may not function properly. '
+            'This will take approximately 20 hours and you will be notified when this has completed.',
+            '',
+            'Thank you'
+        ]
 
-            msg = '\n'.join(msg) + '\n'
-            smtp.sendmail(from_addr, to_addrs_1, msg)
+        utils.sendmail(
+            server=smtp_host,
+            subject='MV tables update in progress',
+            content='\n'.join(content) + '\n',
+            from_addr=from_addr,
+            to_addrs=to_addrs_1
+        )
 
     with cx_Oracle.connect(db_user, db_passwd, db_host) as con:
         con.autocommit = 0
@@ -506,55 +513,58 @@ def finalize(method_changes, db_user, db_passwd, db_host, **kwargs):
     # Taxonomy
     xref.update_taxonomy(db_user, db_passwd, db_host)
 
-    # Send report
+    # Send report (global announcement)
     if smtp_host and from_addr and to_addrs_2:
-        # Alert curators
-        with smtplib.SMTP(smtp_host) as smtp:
-            msg = [
-                'Subject: Protein update completed',
-                '',
-                'Below are listed the signature-entry assignments that changed since {}.'.format(method_changes['date']),
-                '',
-                'Deleted signatures:',
-                '    {:<20}{:<20}'.format('Signature', 'Last entry'),
-                '    ' + '-' * 40
-            ]
+        content = [
+            'Dear all,',
+            '',
+            'Below are listed the signature-entry assignments that changed since {}.'.format(method_changes['date']),
+            '',
+            'Deleted signatures:',
+            '    {:<20}{:<20}'.format('Signature', 'Last entry'),
+            '    ' + '-' * 40
+        ]
 
-            for s in method_changes['deleted']:
-                msg.append('    {:<20}{:<20}'.format(s['method'], s['last_entry']))
+        for s in method_changes['deleted']:
+            content.append('    {:<20}{:<20}'.format(s['method'], s['last_entry']))
 
-            msg += [
-                '',
-                'Moved signatures',
-                '    {:<20}{:<20}{:<20}'.format('Signatures', 'Original entry', 'New entry'),
-                '    ' + '-' * 60
-            ]
+        content += [
+            '',
+            'Moved signatures',
+            '    {:<20}{:<20}{:<20}'.format('Signatures', 'Original entry', 'New entry'),
+            '    ' + '-' * 60
+        ]
 
-            for s in method_changes['moved']:
-                msg.append('    {:<20}{:<20}{:<20}'.format(s['method'], s['original_entry'], s['new_entry']))
+        for s in method_changes['moved']:
+            content.append('    {:<20}{:<20}{:<20}'.format(s['method'], s['original_entry'], s['new_entry']))
 
-            msg += [
-                '',
-                'Unintegrated signatures (still in member database)',
-                '    {:<20}{:<20}'.format('Signature', 'Last entry'),
-                '    ' + '-' * 40
-            ]
+        content += [
+            '',
+            'Unintegrated signatures (still in member database)',
+            '    {:<20}{:<20}'.format('Signature', 'Last entry'),
+            '    ' + '-' * 40
+        ]
 
-            for s in method_changes['deintegrated']:
-                msg.append('    {:<20}{:<20}'.format(s['method'], s['last_entry']))
+        for s in method_changes['deintegrated']:
+            content.append('    {:<20}{:<20}'.format(s['method'], s['last_entry']))
 
-            msg += [
-                '',
-                'New signatures',
-                '    {:<20}{:<15}{:>10}'.format('Signature', 'Entry', 'TrEMBL count'),
-                '    ' + '-' * 50
-            ]
+        content += [
+            '',
+            'New signatures',
+            '    {:<20}{:<15}{:>10}'.format('Signature', 'Entry', 'TrEMBL count'),
+            '    ' + '-' * 50
+        ]
 
-            for s in method_changes['new']:
-                msg.append('    {:<20}{:<15}{:>10}'.format(s['method'], s['entry'], s['count']))
+        for s in method_changes['new']:
+            content.append('    {:<20}{:<15}{:>10}'.format(s['method'], s['entry'], s['count']))
 
-            msg = '\n'.join(msg) + '\n'
-            smtp.sendmail(from_addr, to_addrs_2, msg)
+        utils.sendmail(
+            server=smtp_host,
+            subject='Protein update completed',
+            content='\n'.join(content) + '\n',
+            from_addr=from_addr,
+            to_addrs=to_addrs_2
+        )
 
 
 def refresh_interpro2go(db_user, db_passwd, db_host):
