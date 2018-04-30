@@ -85,7 +85,7 @@ def prepare_matches(db_user, db_passwd, db_host, **kwargs):
 
         msg += [
             '',
-            'Signatures not in the METOHOD table having matches',
+            'Signatures not in the METHOD table having matches',
             '    Signature',
             '    ' + '-' * 20
         ]

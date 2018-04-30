@@ -172,7 +172,7 @@ def main():
             name='load_trembl',
             fn=ipu.proteins.read_flat_file,
             args=(trembl_file, os.path.join(outdir, 'trembl.h5')),
-            lsf=dict(queue=queue, mem=16000),
+            lsf=dict(queue=queue, mem=20000),
             log=os.path.join(outdir, 'load_trembl')
         ),
         Task(
