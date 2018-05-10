@@ -211,11 +211,16 @@ def add_new_matches(user, passwd, db, chunksize=100000):
 
 
 def update_matches(user, passwd, db):
+    delete_match(user, passwd, db) 
+    insert_match(user, passwd, db) 
+
+def delete_match(user, passwd, db):
     with cx_Oracle.connect(user, passwd, db) as con:
         con.autocommit = 0
         cur = con.cursor()
 
         logging.info('deleting old matches')
+        cur.execute('ALTER SESSION FORCE PARALLEL DML PARALLEL 4')
         cur.execute('DELETE /*+ PARALLEL */ '
                     'FROM INTERPRO.MATCH M '
                     'WHERE EXISTS('
@@ -223,11 +228,18 @@ def update_matches(user, passwd, db):
                     '  FROM INTERPRO.PROTEIN_TO_SCAN S '
                     '  WHERE S.PROTEIN_AC = M.PROTEIN_AC'
                     ')')
+        con.commit()
+
+def insert_match(user, passwd, db):
+    with cx_Oracle.connect(user, passwd, db) as con:
+        con.autocommit = 0
+        cur = con.cursor()
 
         logging.info('inserting new matches')
+        cur.execute('ALTER SESSION FORCE PARALLEL DML PARALLEL 4')
         cur.execute('INSERT /*+ PARALLEL */ INTO INTERPRO.MATCH '
                     'SELECT * FROM INTERPRO.MATCH_NEW')
-
+        con.commit()
 
 def pre_prod(user, passwd, db):
     with cx_Oracle.connect(user, passwd, db) as con:
