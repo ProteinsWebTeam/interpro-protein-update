@@ -103,7 +103,6 @@ def refresh_method2swiss(user, passwd, db):
         cur = con.cursor()
 
         cur.execute('TRUNCATE TABLE INTERPRO.METHOD2SWISS_DE')
-        con.commit()
 
         cur.execute("INSERT INTO INTERPRO.METHOD2SWISS_DE "
                     "SELECT "
@@ -139,7 +138,6 @@ def update_splice_variants(user, passwd, db):
         cur.execute('TRUNCATE TABLE INTERPRO.VARSPLIC_MATCH')
         cur.execute('TRUNCATE TABLE INTERPRO.VARSPLIC_MASTER')
         cur.execute('TRUNCATE TABLE INTERPRO.VARSPLIC_NEW')
-        con.commit()
 
         logging.info('\tupdating VARSPLIC_MASTER with protein data')
 
@@ -198,7 +196,6 @@ def update_splice_variants(user, passwd, db):
         cur.execute('DROP TABLE INTERPRO.VARSPLIC_MATCH_OLD')
         cur.execute('DROP TABLE INTERPRO.VARSPLIC_MASTER_OLD')
         cur.execute('DROP TABLE INTERPRO.VARSPLIC_NEW_OLD')
-        con.commit()
 
 
 def update_taxonomy(user, passwd, db):
@@ -207,7 +204,6 @@ def update_taxonomy(user, passwd, db):
         cur = con.cursor()
 
         cur.execute('DROP TABLE INTERPRO.TAXONOMY_LOAD')
-        con.commit()
 
         logging.info('loading taxonomy tree from UniProt')
 
@@ -224,7 +220,6 @@ def update_taxonomy(user, passwd, db):
         cur.execute('GRANT DELETE, INSERT, UPDATE ON INTERPRO.TAXONOMY_LOAD TO INTERPRO_PRODUCTION')
         cur.execute('GRANT SELECT ON TAXONOMY_LOAD TO INTERPRO_SELECT')
         cur.execute('GRANT INSERT ON TAXONOMY_LOAD TO INTERPRO_WEBSERVER')
-        con.commit()
 
         cur.callproc('INTERPRO.IPRO_UTL_PKG.TABLE_STATS', ['TAXONOMY_LOAD',])
         con.commit()
@@ -232,7 +227,6 @@ def update_taxonomy(user, passwd, db):
         logging.info('computing left and right numbers for taxonomy tree')
 
         cur.execute('DROP TABLE INTERPRO.ETAXI')
-        con.commit()
 
         # Table of taxonomic classifications
         cur.execute("CREATE TABLE INTERPRO.ETAXI TABLESPACE INTERPRO_TAB AS "
@@ -273,7 +267,6 @@ def update_taxonomy(user, passwd, db):
         cur.execute('GRANT SELECT ON INTERPRO.ETAXI TO INTERPRO_SELECT')
         cur.execute('GRANT SELECT ON INTERPRO.ETAXI TO INTERPRO_WEBSERVER')
         cur.execute('GRANT SELECT ON INTERPRO.ETAXI TO PUBLIC')
-        con.commit()
 
         # Refresh stats
         cur.callproc('INTERPRO.IPRO_UTL_PKG.TABLE_STATS', ('ETAXI',))
@@ -281,7 +274,6 @@ def update_taxonomy(user, passwd, db):
 
         logging.info('creating UNIPROT_TAXONOMY by combining protein taxonomy with left numbers')
         cur.execute('DROP TABLE INTERPRO.UNIPROT_TAXONOMY')
-        con.commit()
 
         cur.execute('CREATE TABLE INTERPRO.UNIPROT_TAXONOMY TABLESPACE INTERPRO_TAB AS '
                     'SELECT /*+ PARALLEL */ '
@@ -295,7 +287,6 @@ def update_taxonomy(user, passwd, db):
 
         cur.execute('CREATE INDEX UNIPROT_TAXONOMY$L$P ON INTERPRO.UNIPROT_TAXONOMY (LEFT_NUMBER, PROTEIN_AC) TABLESPACE INTERPRO_IND')
         cur.execute('CREATE INDEX UNIPROT_TAXONOMY$P$L ON INTERPRO.UNIPROT_TAXONOMY (PROTEIN_AC, LEFT_NUMBER) TABLESPACE INTERPRO_IND')
-        con.commit()
 
         # Refresh stats
         cur.callproc('INTERPRO.IPRO_UTL_PKG.TABLE_STATS', ('UNIPROT_TAXONOMY',))
@@ -306,11 +297,9 @@ def update_taxonomy(user, passwd, db):
         cur.execute('GRANT SELECT ON UNIPROT_TAXONOMY TO INTERPRO_SELECT')
         cur.execute('GRANT SELECT ON UNIPROT_TAXONOMY TO INTERPRO_WEBSERVER')
         cur.execute('GRANT SELECT ON UNIPROT_TAXONOMY TO PUBLIC')
-        con.commit()
 
         logging.info('computing the count of each taxon within each entry')
         cur.execute('DROP TABLE INTERPRO.MV_TAX_ENTRY_COUNT')
-        con.commit()
 
         '''
         Count of proteins with true matches to InterPro entries
@@ -351,7 +340,6 @@ def update_taxonomy(user, passwd, db):
                     'ADD CONSTRAINT PK_MV_TAX_ENTRY_COUNT '
                     'PRIMARY KEY (ENTRY_AC, TAX_ID) '
                     'USING INDEX TABLESPACE INTERPRO_IND')
-        con.commit()
 
         cur.execute('CREATE UNIQUE INDEX TEC_PERF_IND1 '
                     'ON INTERPRO.MV_TAX_ENTRY_COUNT (TAX_ID, ENTRY_AC) '
@@ -359,7 +347,6 @@ def update_taxonomy(user, passwd, db):
         cur.execute('GRANT ALTER, DELETE, INSERT, SELECT, UPDATE, ON COMMIT REFRESH, QUERY REWRITE, DEBUG, FLASHBACK '
                     'ON INTERPRO.MV_TAX_ENTRY_COUNT TO INTERPRO_PRODUCTION')
         cur.execute('GRANT SELECT ON INTERPRO.MV_TAX_ENTRY_COUNT TO INTERPRO_SELECT')
-        con.commit()
 
         # Refresh stats
         cur.callproc('INTERPRO.IPRO_UTL_PKG.TABLE_STATS', ('MV_TAX_ENTRY_COUNT',))

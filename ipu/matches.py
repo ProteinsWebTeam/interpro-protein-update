@@ -112,7 +112,6 @@ def add_new_matches(user, passwd, db, chunksize=100000):
 
         logging.info('truncating staging table')
         cur.execute('TRUNCATE TABLE INTERPRO.MATCH_NEW_STG')
-        con.commit()
 
         logging.info('adding new matches to staging table')
         cur.execute("SELECT /*+ PARALLEL */ DISTINCT "
@@ -199,7 +198,6 @@ def add_new_matches(user, passwd, db, chunksize=100000):
 
         logging.info('adding new matches from staging table to final table')
         cur.execute('TRUNCATE TABLE INTERPRO.MATCH_NEW')
-        con.commit()
 
         cur.execute('INSERT /*+ PARALLEL */ INTO INTERPRO.MATCH_NEW '
                     'SELECT * '
@@ -504,7 +502,6 @@ def finalize(method_changes, db_user, db_passwd, db_host, **kwargs):
                     'FROM INTERPRO.MATCH_STATS')
 
         cur.execute('TRUNCATE TABLE INTERPRO.MATCH_STATS')
-        con.commit()
 
         cur.execute('INSERT /*+ APPEND PARALLEL */ INTO INTERPRO.MATCH_STATS '
                     'SELECT '
@@ -520,7 +517,6 @@ def finalize(method_changes, db_user, db_passwd, db_host, **kwargs):
         con.commit()
 
         cur.execute('DROP TABLE INTERPRO.MATCH_STATS_OLD')
-        con.commit()
 
     # Taxonomy
     xref.update_taxonomy(db_user, db_passwd, db_host)
@@ -600,7 +596,6 @@ def update_site_matches(user, passwd, db):
 
         logging.info('populating INTERPRO.SITE_MATCH_NEW')
         cur.execute('TRUNCATE TABLE INTERPRO.SITE_MATCH_NEW')
-        con.commit()
 
         cur.execute('INSERT /*+ APPEND PARALLEL */ INTO INTERPRO.SITE_MATCH_NEW ('
                     '  PROTEIN_AC, '
