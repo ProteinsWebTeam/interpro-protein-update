@@ -212,6 +212,7 @@ def update_matches(user, passwd, db):
     delete_match(user, passwd, db) 
     insert_match(user, passwd, db) 
 
+
 def delete_match(user, passwd, db):
     with cx_Oracle.connect(user, passwd, db) as con:
         con.autocommit = 0
@@ -228,6 +229,7 @@ def delete_match(user, passwd, db):
                     ')')
         con.commit()
 
+
 def insert_match(user, passwd, db):
     with cx_Oracle.connect(user, passwd, db) as con:
         con.autocommit = 0
@@ -238,6 +240,7 @@ def insert_match(user, passwd, db):
         cur.execute('INSERT /*+ PARALLEL */ INTO INTERPRO.MATCH '
                     'SELECT * FROM INTERPRO.MATCH_NEW')
         con.commit()
+
 
 def pre_prod(user, passwd, db):
     with cx_Oracle.connect(user, passwd, db) as con:
