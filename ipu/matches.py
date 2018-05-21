@@ -125,7 +125,8 @@ def add_new_matches(user, passwd, db, chunksize=100000):
                     "  SYSDATE SEQ_DATE, "
                     "  SYSDATE MATCH_DATE, "
                     "  SYSDATE TIMESTAMP, "
-                    "  IPR.EVALUE "
+                    "  IPR.EVALUE, "
+                    "  IPR.MODEL_AC "
                     "FROM "
                     "  IPRSCAN.MV_IPRSCAN IPR, "
                     "  INTERPRO.PROTEIN_TO_SCAN PS, "
@@ -152,9 +153,10 @@ def add_new_matches(user, passwd, db, chunksize=100000):
                                  "  MATCH_DATE, "
                                  "  TIMESTAMP, "
                                  "  USERSTAMP, "
-                                 "  SCORE"
+                                 "  SCORE, "
+                                 "  MODEL_AC"
                                  ") "
-                                 "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, 'INTERPRO',  :11)", data)
+                                 "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, 'INTERPRO',  :11, :12)", data)
                 data = []
                 logging.info('adding new matches to staging table\t{}'.format(cnt))
 
@@ -171,9 +173,10 @@ def add_new_matches(user, passwd, db, chunksize=100000):
                              "  MATCH_DATE, "
                              "  TIMESTAMP, "
                              "  USERSTAMP, "
-                             "  SCORE"
+                             "  SCORE, "
+                             "  MODEL_AC"
                              ") "
-                             "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, 'INTERPRO',  :11)", data)
+                             "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, 'INTERPRO',  :11, :12)", data)
 
         con.commit()
         cur2.close()
