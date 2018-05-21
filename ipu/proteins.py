@@ -456,8 +456,6 @@ def _count_proteins_to_delete(user, passwd, db, owner, table):
                     ')'.format(owner, table))
         cnt_to_delete = cur.fetchone()[0]
 
-    print(owner, table, cnt_to_delete)
-
     return cnt_to_delete
 
 
