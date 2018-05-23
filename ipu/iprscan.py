@@ -1643,3 +1643,99 @@ def _refresh_pct_tmhmm(user, passwd, db):
                     'AND HL.MATCH_ID = HM.ID')
         con.commit()
 
+
+def report_swissprot_changes(user, passwd, db, updates, prefix='swiss_de_report_'):
+    databases = {}
+    analyses = []
+    for dbcode, last_id, new_id in updates:
+        databases[dbcode] = (last_id, new_id)
+        analyses += [last_id, new_id]
+
+    with cx_Oracle.connect(user, passwd, db) as con:
+        con.autocommit = 0
+        cur = con.cursor()
+        cur.execute(
+            """
+            SELECT DISTINCT M.DBCODE, IPR.ANALYSIS_ID, IPR.METHOD_AC, D.TEXT, E.ENTRY_AC, E.NAME, E.ENTRY_TYPE
+              FROM INTERPRO.PROTEIN P
+                INNER JOIN UNIPARC.XREF UX ON P.PROTEIN_AC = UX.AC
+                INNER JOIN IPRSCAN.MV_IPRSCAN IPR ON UX.UPI = IPR.UPI
+                INNER JOIN INTERPRO_ANALYSIS.PROTEIN_DESC P2D ON UX.AC = P2D.PROTEIN_AC
+                INNER JOIN INTERPRO_ANALYSIS.DESC_VALUE D ON P2D.DESC_ID = D.DESC_ID
+                INNER JOIN INTERPRO.METHOD M ON IPR.METHOD_AC = M.METHOD_AC
+                INNER JOIN INTERPRO.ENTRY2METHOD E2M ON M.METHOD_AC = E2M.METHOD_AC
+                INNER JOIN INTERPRO.ENTRY E ON E2M.ENTRY_AC = E.ENTRY_AC
+            WHERE P.DBCODE = 'S'
+            AND P.FRAGMENT = 'N'
+            AND IPR.ANALYSIS_ID IN ({})
+            """.format(format(','.join([':'+str(i+1) for i in range(len(analyses))]))),
+            analyses
+        )
+
+        methods = {}
+        for row in cur:
+            dbcode = row[0]
+            analsysis_id = row[1]
+            method_ac = row[2]
+            descr = row[3]
+            entry_ac = row[4]
+            entry_name = row[5]
+            entry_type = row[6]
+
+            last_id, new_id = databases[dbcode]
+            if dbcode in methods:
+                db = methods[dbcode]
+            else:
+                db = methods[dbcode] = {}
+
+            if method_ac in db:
+                m = db[method_ac]
+            else:
+                m = db[method_ac] = {
+                    'acc': method_ac,
+                    'entry': (entry_ac, entry_name, entry_type),
+                    'analyses': {
+                        last_id: set(),
+                        new_id: set()
+                    }
+                }
+
+            m['analyses'][analsysis_id].add(descr)
+
+        cur.execute(
+            """
+            SELECT DBCODE, DBSHORT
+            FROM INTERPRO.CV_DATABASE 
+            WHERE DBCODE IN ({})
+            """.format(format(','.join([':'+str(i+1) for i in range(len(databases))]))),
+            list(databases.keys())
+        )
+
+        dbnames = dict(cur.fetchall())
+
+    for dbcode in methods:
+        last_id, new_id = databases[dbcode]
+        lines = []
+        for method_ac in methods[dbcode]:
+            m = methods[dbcode][method_ac]
+
+            entry_ac, entry_name, entry_type = m['entry']
+            last_descrs = m['analyses'][last_id]
+            new_descrs = m['analyses'][new_id]
+            n_last = len(last_descrs)
+            n_new = len(new_descrs)
+
+            change = '{:.1f}'.format(n_new / n_last * 100) if n_last else 'N/A'
+
+            gained = ' | '.join(new_descrs - last_descrs)
+            lost = ' | '.join(last_descrs - new_descrs)
+
+            lines.append((method_ac, entry_ac, entry_name, entry_type, n_last, n_new, change, gained, lost))
+
+        dbshort = dbnames[dbcode]
+        with open(prefix + dbshort + '.tsv', 'wt') as fh:
+            fh.write('Method\tEntry\tName\tType\t# of old descriptions\t# of new descriptions\tChange (%)\t'
+                     'Descriptions gained\tDescriptions lost\n')
+
+            for cols in sorted(lines, key=lambda x: (0 if x[3] == 'F' else 1, x[3], x[1])):
+                fh.write('\t'.join(map(str, cols)) + '\n')
