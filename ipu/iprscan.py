@@ -254,6 +254,10 @@ def compare_ispro_ippro(db_user, db_passwd, db_host, **kwargs):
 
 
 def refresh_mv_iprscan(user, passwd, host, method='C', **kwargs):
+
+    # TODO Add model_ac column to *pct* tables, plus support for location fragments too?
+    # TODO Or delete this refresh_mv_iprscan if never used!
+
     workdir = kwargs.get('workdir', os.getcwd())
     queue = kwargs.get('queue')
     parallel = kwargs.get('parallel', 1)
