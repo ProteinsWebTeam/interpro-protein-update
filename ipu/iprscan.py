@@ -3,7 +3,7 @@
 
 import logging
 import os
-
+import sys
 import cx_Oracle
 from mundone import Batch, Task
 
@@ -256,7 +256,9 @@ def compare_ispro_ippro(db_user, db_passwd, db_host, **kwargs):
 def refresh_mv_iprscan(user, passwd, host, method='C', **kwargs):
 
     # TODO Add model_ac column to *pct* tables, plus support for location fragments too?
-    # TODO Or delete this refresh_mv_iprscan if never used!
+    # TODO Or delete this refresh_mv_iprscan if never used! <-- DO THIS!
+    logging.critical('error: refresh_mv_iprscan code was called that should no longer be used?')
+    return False
 
     workdir = kwargs.get('workdir', os.getcwd())
     queue = kwargs.get('queue')

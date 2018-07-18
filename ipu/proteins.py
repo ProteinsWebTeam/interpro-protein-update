@@ -206,6 +206,7 @@ def insert(old_h5, new_h5, db_user, db_passwd, db_host, **kwargs):
         cur.execute('TRUNCATE TABLE INTERPRO.PROTEIN_CHANGES')
         cur.execute('TRUNCATE TABLE INTERPRO.PROTEIN_TO_SCAN')
         cur.execute('TRUNCATE TABLE INTERPRO.MATCH_NEW')
+        cur.execute('TRUNCATE TABLE INTERPRO.FEATURE_MATCH_NEW')
         con.commit()
 
         logging.info('populating PROTEIN_CHANGES')
@@ -580,6 +581,17 @@ def delete_alt(user, passwd, db, **kwargs):
 
     # MATCH_NEW
     table = 'MATCH_NEW'
+    tasks.append(
+        Task(
+            fn=utils.dump_and_load,
+            args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
+            kwargs=dict(exclude=deleted, idx=0),
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
+        )
+    )
+
+    # FEAUTE_MATCH_NEW
+    table = 'FEATURE_MATCH_NEW'
     tasks.append(
         Task(
             fn=utils.dump_and_load,
