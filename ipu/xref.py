@@ -178,8 +178,8 @@ def update_splice_variants(user, passwd, db):
                     "  IPR.SEQ_START, "
                     "  IPR.SEQ_END, "
                     "  'T' AS STATUS, "
-                    "  O2D.DBCODE, "
-                    "  O2D.EVIDENCE, "
+                    "  I2D.DBCODE, "
+                    "  I2D.EVIDENCE, "
                     "  SYSDATE, "
                     "  SYSDATE, "
                     "  SYSDATE, "
@@ -189,12 +189,13 @@ def update_splice_variants(user, passwd, db):
                     "  IPR.FRAGMENTS "
                     "FROM "
                     "  IPRSCAN.MV_IPRSCAN IPR, "
-                    "  INTERPRO.IPRSCAN2DBCODE O2D, "
+                    "  INTERPRO.IPRSCAN2DBCODE I2D, "
                     "  UNIPARC.XREF XREF "
-                    "WHERE IPR.ANALYSIS_ID = O2D.IPRSCAN_SIG_LIB_REL_ID "
+                    "WHERE IPR.ANALYSIS_ID = I2D.IPRSCAN_SIG_LIB_REL_ID "
                     "AND XREF.UPI = IPR.UPI "
                     "AND XREF.DELETED = 'N' "
-                    "AND XREF.DBID IN (24, 25)")
+                    "AND XREF.DBID IN (24, 25) "
+                    "AND I2D.DBCODE NOT IN ('l', 'g', 'j', 'n', 'q', 's', 'v', 'x')")
         con.commit()
 
         logging.info('\tloading matches into VARSPLIC_MATCH')

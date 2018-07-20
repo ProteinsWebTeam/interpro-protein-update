@@ -133,7 +133,8 @@ def add_new_matches(user, passwd, db, chunksize=100000):
                     "  INTERPRO.PROTEIN_TO_SCAN PS, "
                     "  INTERPRO.IPRSCAN2DBCODE I2D "
                     "WHERE PS.UPI = IPR.UPI "
-                    "AND I2D.IPRSCAN_SIG_LIB_REL_ID = IPR.ANALYSIS_ID")
+                    "  AND I2D.IPRSCAN_SIG_LIB_REL_ID = IPR.ANALYSIS_ID "
+                    "  AND I2D.DBCODE NOT IN ('l', 'g', 'j', 'n', 'q', 's', 'v', 'x')")
         data = []
         cnt = 0
 
@@ -215,7 +216,7 @@ def add_new_matches(user, passwd, db, chunksize=100000):
 
 
 def update_matches(user, passwd, db):
-    delete_match(user, passwd, db) 
+    delete_match(user, passwd, db)
     insert_match(user, passwd, db) 
 
 
