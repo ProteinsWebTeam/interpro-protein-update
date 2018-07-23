@@ -115,6 +115,32 @@ def add_new_feature_matches(user, passwd, db, chunksize=100000):
             cnt += 1
 
             if not cnt % chunksize:
+                try:
+                    cur2.executemany("INSERT INTO INTERPRO.FEATURE_MATCH_NEW_STG ("
+                                     "  PROTEIN_AC, "
+                                     "  METHOD_AC, "
+                                     "  SEQ_FEATURE, "
+                                     "  POS_FROM, "
+                                     "  POS_TO, "
+                                     "  DBCODE, "
+                                     "  SEQ_DATE, "
+                                     "  MATCH_DATE, "
+                                     "  TIMESTAMP, "
+                                     "  USERSTAMP"
+                                     ") "
+                                     "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, 'INTERPRO')", data)
+                except:
+                     logging.error('error inserting data:\n', exc_info=True)
+                     i=0
+                     for d in data:
+                         i = i + 1
+                     logging.error('%d: %s\n', i, d)
+                     raise
+                data = []
+                logging.info('adding new feature matches to staging table\t{0}'.format(cnt))
+
+        if data:
+            try:
                 cur2.executemany("INSERT INTO INTERPRO.FEATURE_MATCH_NEW_STG ("
                                  "  PROTEIN_AC, "
                                  "  METHOD_AC, "
@@ -128,23 +154,16 @@ def add_new_feature_matches(user, passwd, db, chunksize=100000):
                                  "  USERSTAMP"
                                  ") "
                                  "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, 'INTERPRO')", data)
-                data = []
-                logging.info('adding new feature matches to staging table\t{}'.format(cnt))
+            except:
+                 logging.error('error inserting final data:\n', exc_info=True)
 
-        if data:
-            cur2.executemany("INSERT INTO INTERPRO.FEATURE_MATCH_NEW_STG ("
-                             "  PROTEIN_AC, "
-                             "  METHOD_AC, "
-                             "  SEQ_FEATURE, "
-                             "  POS_FROM, "
-                             "  POS_TO, "
-                             "  DBCODE, "
-                             "  SEQ_DATE, "
-                             "  MATCH_DATE, "
-                             "  TIMESTAMP, "
-                             "  USERSTAMP"
-                             ") "
-                             "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, 'INTERPRO')", data)
+                 i=0
+                 for d in data:
+                     i = i + 1
+                     logging.error('%d: %s\n', i, d)
+                 raise
+
+        logging.info('added new feature matches to staging table\t{0}'.format(cnt))
 
         con.commit()
         cur2.close()
