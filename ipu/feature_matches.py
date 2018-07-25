@@ -99,7 +99,8 @@ def add_new_feature_matches(user, passwd, db, chunksize=100000):
                     "  I2D.DBCODE, "
                     "  SYSDATE SEQ_DATE, "
                     "  SYSDATE MATCH_DATE, "
-                    "  SYSDATE TIMESTAMP "
+                    "  SYSDATE TIMESTAMP, "
+                    "  'INTERPRO' as USERSTAMP "
                     "FROM "
                     "  IPRSCAN.MV_IPRSCAN IPR, "
                     "  INTERPRO.PROTEIN_TO_SCAN PS, "
@@ -108,10 +109,17 @@ def add_new_feature_matches(user, passwd, db, chunksize=100000):
                     "  AND I2D.IPRSCAN_SIG_LIB_REL_ID = IPR.ANALYSIS_ID "
                     "  AND I2D.DBCODE IN ('l', 'g', 'j', 'n', 'q', 's', 'v', 'x')")
         data = []
+        data_len = 0
         cnt = 0
 
         for row in cur:
             data.append(row)
+            if data_len == 0:
+                data_len = len(data)
+                cur2.bindarraysize = data_len
+                db_types2 = (d[1] for d in cur.description)
+                cur2.setinputsizes(*db_types2)
+
             cnt += 1
 
             if not cnt % chunksize:
@@ -128,7 +136,7 @@ def add_new_feature_matches(user, passwd, db, chunksize=100000):
                                      "  TIMESTAMP, "
                                      "  USERSTAMP"
                                      ") "
-                                     "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, 'INTERPRO')", data)
+                                     "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10)", data)
                 except:
                      logging.error('error inserting data:\n', exc_info=True)
                      i=0
@@ -153,7 +161,7 @@ def add_new_feature_matches(user, passwd, db, chunksize=100000):
                                  "  TIMESTAMP, "
                                  "  USERSTAMP"
                                  ") "
-                                 "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, 'INTERPRO')", data)
+                                 "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10)", data)
             except:
                  logging.error('error inserting final data:\n', exc_info=True)
 
@@ -312,33 +320,33 @@ def pre_prod(user, passwd, db):
         cur.execute('SELECT DBCODE, CVD.DBNAME, COUNT_OLD, COUNT_NEW '
                     'FROM INTERPRO.CV_DATABASE CVD '
                     'JOIN ('
-                    '  SELECT DBCODE, NVL(OLD.COUNT, 0) AS COUNT_OLD, NVL(MATCH.COUNT, 0) + NVL(MATCH_NEW.COUNT, 0) AS COUNT_NEW FROM ('
-                    '    SELECT M1.DBCODE, SUM(MMM.MATCH_COUNT) AS COUNT '
-                    '    FROM INTERPRO.METHOD M1 '
-                    '    JOIN INTERPRO.MV_METHOD_MATCH MMM USING (METHOD_AC) '
+                    '  SELECT DBCODE, NVL(OLD.COUNT, 0) AS COUNT_OLD, NVL(FEATURE_MATCH.COUNT, 0) + NVL(FEATURE_MATCH_NEW.COUNT, 0) AS COUNT_NEW FROM ('
+                    '    SELECT M1.DBCODE, SUM(MMM.FEATURE_MATCH_COUNT) AS COUNT '
+                    '    FROM INTERPRO.FEATURE_METHOD M1 '
+                    '    JOIN INTERPRO.MV_FEA_METHOD_MATCH MMM USING (METHOD_AC) '
                     '    GROUP BY DBCODE'
                     '  ) OLD '
                     '  FULL OUTER JOIN ('
                     '    SELECT M1.DBCODE, COUNT(*) AS COUNT '
-                    '    FROM INTERPRO.MATCH M1 '
+                    '    FROM INTERPRO.FEATURE_MATCH M1 '
                     '    GROUP BY DBCODE'
-                    '  ) MATCH USING (DBCODE)  '
+                    '  ) FEATURE_MATCH USING (DBCODE)  '
                     '  FULL OUTER JOIN ('
                     '    SELECT M1.DBCODE, COUNT(*) AS COUNT '
-                    '    FROM INTERPRO.MATCH_NEW M1 '
+                    '    FROM INTERPRO.FEATURE_MATCH_NEW M1 '
                     '   GROUP BY DBCODE'
-                    '  ) MATCH_NEW USING (DBCODE)'
+                    '  ) FEATURE_MATCH_NEW USING (DBCODE)'
                     ') USING (DBCODE)')
         db_count_changes = [dict(zip(['code', 'name', 'old', 'new'], row)) for row in cur]
         logging.info('    {}'.format(len(db_count_changes)))
 
-        # Methods not in the METHOD table that have feature matches in MATCH_NEW
-        logging.info('  signatures not in the METHOD table that have feature matches in the MATCH_NEW table')
+        # Methods not in the FEATURE_METHOD table that have feature matches in FEATURE_MATCH_NEW
+        logging.info('  signatures not in the FEATURE_METHOD table that have feature matches in the FEATURE_MATCH_NEW table')
         cur.execute('SELECT DISTINCT METHOD_AC '
-                    'FROM INTERPRO.MATCH_NEW '
+                    'FROM INTERPRO.FEATURE_MATCH_NEW '
                     'MINUS '
                     'SELECT METHOD_AC '
-                    'FROM INTERPRO.METHOD')
+                    'FROM INTERPRO.FEATURE_METHOD')
         missing_methods = [row[0] for row in cur]
         logging.info('    {}'.format(len(missing_methods)))
 
@@ -353,3 +361,12 @@ def pre_prod(user, passwd, db):
         'db_changes': db_count_changes,
         'missing_methods': missing_methods
     }
+
+def refresh(db_user, db_passwd, db_host):
+    with cx_Oracle.connect(db_user, db_passwd, db_host) as con:
+        con.autocommit = 0
+        cur = con.cursor()
+
+        logging.info('Refreshing feature match MV tables')
+        cur.callproc('INTERPRO.REFRESH_FEATURE_MATCH_COUNTS.REFRESH')
+        con.commit()

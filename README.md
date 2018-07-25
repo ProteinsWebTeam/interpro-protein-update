@@ -222,7 +222,7 @@ Make a copy of `config.ini.sample`, and edit it.
             <td></td>
         </tr>
         <tr>
-            <td rowspan=2>Update 3</td>
+            <td rowspan=4>Update 3</td>
             <td>update_matches</td>
             <td>Updates production tables with match data</td>
             <td></td>
@@ -231,6 +231,16 @@ Make a copy of `config.ini.sample`, and edit it.
             <td>update_feature_matches</td>
             <td>Updates production tables with feature match data</td>
             <td></td>
+        </tr>
+        <tr>
+            <td>refresh_go</td>
+            <td>Refresh InterPro2GO MV tables</td>
+            <td>Low priority</td>
+        </tr>
+        <tr>
+            <td>refresh_feature_matches</td>
+            <td>Refresh feature match MV tables</td>
+            <td>Low priority</td>
         </tr>
         <tr>
             <td>Check CRC64</td>

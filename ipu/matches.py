@@ -466,7 +466,6 @@ def pre_prod(user, passwd, db):
         'missing_methods': missing_methods
     }
 
-
 def finalize(method_changes, db_user, db_passwd, db_host, **kwargs):
     smtp_host = kwargs.get('smtp_host')
     from_addr = kwargs.get('from_addr')

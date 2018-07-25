@@ -377,6 +377,15 @@ def main():
             log=os.path.join(outdir, 'refresh_go')
         ),
 
+        Task(
+            name='refresh_feature_matches',
+            fn=ipu.feature_matches.refresh,
+            requires=['finalize'],
+            args=(*db_user_pro, db_host),
+            lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'refresh_feature_matches')
+        ),
+
         # Check CRC64
         Task(
             name='crc64',
