@@ -661,3 +661,211 @@ def update_site_matches(user, passwd, db):
         con.commit()
 
     return True
+
+
+def rebuild_matches(user, passwd, db, insert=True, index=True, replace=True):
+    with cx_Oracle.connect(user, passwd, db) as con:
+        con.autocommit = 0
+        cur = con.cursor()
+
+        if insert:
+            logging.info('dropping table')
+            try:
+                cur.execute('DROP TABLE INTERPRO.MATCH_TST')
+            except:
+                pass
+
+            logging.info('creating table')
+            cur.execute(
+                """
+                CREATE TABLE INTERPRO.MATCH_TST
+                (
+                    PROTEIN_AC VARCHAR(15) NOT NULL,
+                    METHOD_AC VARCHAR(25) NOT NULL,
+                    MODEL_AC VARCHAR2(25) NOT NULL,
+                    POS_FROM NUMBER(5,0),
+                    POS_TO NUMBER(5,0),
+                    STATUS CHAR(1) NOT NULL,
+                    DBCODE CHAR(1) NOT NULL,
+                    EVIDENCE CHAR(3),
+                    USERSTAMP VARCHAR2(30) NOT NULL,
+                    SCORE FLOAT(126)
+                )
+                PARTITION BY LIST (DBCODE)
+                (
+                    PARTITION MATCH_DBCODE_V VALUES ('V'),
+                    PARTITION MATCH_DBCODE_R VALUES ('R'),
+                    PARTITION MATCH_DBCODE_U VALUES ('U'),
+                    PARTITION MATCH_DBCODE_P VALUES ('P'),
+                    PARTITION MATCH_DBCODE_Y VALUES ('Y'),
+                    PARTITION MATCH_DBCODE_D VALUES ('D'),
+                    PARTITION MATCH_DBCODE_M VALUES ('M'),
+                    PARTITION MATCH_DBCODE_Q VALUES ('Q'),
+                    PARTITION MATCH_DBCODE_X VALUES ('X'),
+                    PARTITION MATCH_DBCODE_N VALUES ('N'),
+                    PARTITION MATCH_DBCODE_H VALUES ('H'),
+                    PARTITION MATCH_DBCODE_G VALUES ('g'),
+                    PARTITION MATCH_DBCODE_F VALUES ('F'),
+                    PARTITION MATCH_DBCODE_B VALUES ('B'),
+                    PARTITION MATCH_DBCODE_J VALUES ('J')
+                )
+                """
+            )
+
+            logging.info('populating table 1/2')
+            #
+            cur.execute(
+                """
+                INSERT /*+ APPEND */ INTO INTERPRO.MATCH_TST
+                SELECT DISTINCT
+                  UPX.AC,
+                  IPR.METHOD_AC,
+                  IPR.MODEL_AC,
+                  IPR.SEQ_START,
+                  IPR.SEQ_END,
+                  'T',
+                  I2D.DBCODE,
+                  I2D.EVIDENCE,
+                  'INTERPRO',
+                  IPR.EVALUE
+                FROM IPRSCAN.MV_IPRSCAN IPR
+                INNER JOIN UNIPARC.XREF UPX ON (IPR.UPI = UPX.UPI AND UPX.DBID IN (2, 3) AND UPX.DELETED = 'N')
+                INNER JOIN INTERPRO.IPRSCAN2DBCODE I2D ON IPR.ANALYSIS_ID = I2D.IPRSCAN_SIG_LIB_REL_ID
+                WHERE IPR.SEQ_START < IPR.SEQ_END
+                AND I2D.DBCODE != 'Y'
+                """
+            )
+            con.commit()
+
+            logging.info('populating table 2/2')
+            cur.execute(
+                """
+                INSERT INTO /*+ APPEND */ INTERPRO.MATCH_TST
+                    SELECT
+                        A.AC,
+                        A.METHOD_AC,
+                        A.MODEL_AC,
+                        A.SEQ_START,
+                        A.SEQ_END,
+                        'T',
+                        A.DBCODE,
+                        A.EVIDENCE,
+                        'INTERPRO',
+                        A.EVALUE
+                    FROM (
+                        SELECT
+                            UPX.AC,
+                            IPR.METHOD_AC,
+                            IPR.MODEL_AC,
+                            IPR.SEQ_START,
+                            IPR.SEQ_END,
+                            I2D.DBCODE,
+                            I2D.EVIDENCE,
+                            IPR.EVALUE,
+                            ROW_NUMBER() OVER (PARTITION BY UPX.AC, IPR.METHOD_AC, IPR.SEQ_START, IPR.SEQ_END ORDER BY IPR.EVALUE) RN
+                        FROM IPRSCAN.MV_IPRSCAN IPR
+                            INNER JOIN UNIPARC.XREF UPX ON (IPR.UPI = UPX.UPI AND UPX.DBID IN (2, 3) AND UPX.DELETED = 'N')
+                            INNER JOIN INTERPRO.IPRSCAN2DBCODE I2D ON IPR.ANALYSIS_ID = I2D.IPRSCAN_SIG_LIB_REL_ID
+                        WHERE IPR.SEQ_START < IPR.SEQ_END AND I2D.DBCODE = 'Y'
+                    ) A
+                WHERE A.RN = 1
+                """
+            )
+            con.commit()
+
+        if index:
+            logging.info('adding constraint: PK_MATCH_TST')
+            cur.execute(
+                """
+                ALTER TABLE INTERPRO.MATCH_TST
+                ADD CONSTRAINT PK_MATCH_TST PRIMARY KEY (PROTEIN_AC, METHOD_AC, MODEL_AC, POS_FROM, POS_TO)
+                USING INDEX TABLESPACE INTERPRO_IND
+                """
+            )
+            logging.info('adding constraint: CK_MATCH_TST$FROM')
+            cur.execute(
+                """
+                ALTER TABLE INTERPRO.MATCH_TST
+                ADD CONSTRAINT CK_MATCH_TST$FROM CHECK (POS_FROM >= 1)
+                """
+            )
+            logging.info('adding constraint: CK_MATCH_TST$NEG')
+            cur.execute(
+                """
+                ALTER TABLE INTERPRO.MATCH_TST
+                ADD CONSTRAINT CK_MATCH_TST$NEG CHECK (POS_TO - POS_FROM > 0)
+                """
+            )
+            logging.info('adding constraint: CK_MATCH_TST$STATUS')
+            cur.execute(
+                """
+                ALTER TABLE INTERPRO.MATCH_TST
+                ADD CONSTRAINT CK_MATCH_TST$STATUS CHECK (STATUS!='N' OR (STATUS='N' AND DBCODE IN ('P', 'M', 'Q')))
+                """
+            )
+            logging.info('adding constraint: FK_MATCH_TST$DBCODE')
+            cur.execute(
+                """
+                ALTER TABLE INTERPRO.MATCH_TST 
+                ADD CONSTRAINT FK_MATCH_TST$DBCODE FOREIGN KEY (DBCODE) REFERENCES INTERPRO.CV_DATABASE (DBCODE)
+                """
+            )
+            logging.info('adding constraint: FK_MATCH_TST$EVIDENCE')
+            cur.execute(
+                """
+                ALTER TABLE INTERPRO.MATCH_TST 
+                ADD CONSTRAINT FK_MATCH_TST$EVIDENCE FOREIGN KEY (EVIDENCE) REFERENCES INTERPRO.CV_EVIDENCE (CODE)
+                """
+            )
+            logging.info('adding constraint: FK_MATCH_TST$METHOD')
+            cur.execute(
+                """
+                ALTER TABLE INTERPRO.MATCH_TST 
+                ADD CONSTRAINT FK_MATCH_TST$METHOD FOREIGN KEY (METHOD_AC) REFERENCES INTERPRO.METHOD (METHOD_AC) ON DELETE CASCADE
+                """
+            )
+            logging.info('adding constraint: FK_MATCH_TST$PROTEIN')
+            cur.execute(
+                """
+                ALTER TABLE INTERPRO.MATCH_TST 
+                ADD CONSTRAINT FK_MATCH_TST$PROTEIN FOREIGN KEY (PROTEIN_AC) REFERENCES INTERPRO.PROTEIN (PROTEIN_AC) ON DELETE CASCADE
+                """
+            )
+            logging.info('adding constraint: FK_MATCH_TST$STATUS')
+            cur.execute(
+                """
+                ALTER TABLE INTERPRO.MATCH_TST 
+                ADD CONSTRAINT FK_MATCH_TST$STATUS FOREIGN KEY (STATUS) REFERENCES INTERPRO.CV_STATUS (CODE)
+                """
+            )
+
+            # logging.info('creating index on: STATUS')
+            # cur.execute("CREATE INDEX I_MATCH_TST$STATUS ON INTERPRO.MATCH_TST ('STATUS')")
+            # logging.info('creating index on: DBCODE')
+            # cur.execute("CREATE INDEX I_MATCH_TST$DBCODE ON INTERPRO.MATCH_TST ('DBCODE')")
+            # logging.info('creating index on: EVIDENCE')
+            # cur.execute("CREATE INDEX I_MATCH_TST$EVIDENCE ON INTERPRO.MATCH_TST ('EVIDENCE')")
+            logging.info('creating index on: METHOD_AC')
+            cur.execute("CREATE INDEX I_MATCH_TST$METHOD_AC ON INTERPRO.MATCH_TST ('METHOD_AC') "
+                        "TABLESPACE INTERPRO_IND NOLOGGING")
+
+        if replace:
+            try:
+                cur.execute('DROP TABLE INTERPRO.MATCH CASCADE CONSTRAINTS ')
+            except:
+                pass
+
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME CONSTRAINT PK_MATCH_TST TO PK_MATCH')
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME CONSTRAINT CK_MATCH_TST$FROM TO CK_MATCH$FROM')
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME CONSTRAINT CK_MATCH_TST$NEG TO CK_MATCH$NEG')
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME CONSTRAINT CK_MATCH_TST$STATUS TO CK_MATCH$STATUS')
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME CONSTRAINT FK_MATCH_TST$DBCODE TO FK_MATCH$DBCODE')
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME CONSTRAINT FK_MATCH_TST$EVIDENCE TO FK_MATCH$EVIDENCE')
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME CONSTRAINT FK_MATCH_TST$METHOD TO FK_MATCH$METHOD')
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME CONSTRAINT FK_MATCH_TST$PROTEIN TO FK_MATCH$PROTEIN')
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME CONSTRAINT FK_MATCH_TST$STATUS TO FK_MATCH$STATUS')
+            cur.execute('ALTER INDEX I_MATCH_TST$METHOD_AC RENAME TO I_MATCH$METHOD_AC')
+            cur.execute('ALTER TABLE INTERPRO.MATCH_TST RENAME TO MATCH')
+
+
+        logging.info('complete')
