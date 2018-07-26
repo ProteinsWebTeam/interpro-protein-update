@@ -18,6 +18,10 @@ STATUS_SUCCESS = 0
 STATUS_ERROR = 2
 
 
+# todo: check the job is correctly submitted on LSF if no such queue
+# in run() do not wait if there are running tasks NOT HANDLED by this instance (or check the output file then update the DB?)
+
+
 def mktemp(prefix=None, suffix=None, dir=None, isdir=False):
     """Convenient wrapper around Python's ``tempfile.mkdtemp()`` and ``tempfile.mkstemp()``.
     Creates a temporary file or directory.

@@ -2,13 +2,23 @@
 # -*- coding: utf-8 -*-
 
 import importlib
+import os
 import pickle
 import struct
 import sys
+import time
 
 
 def main():
-    with open(sys.argv[1], 'rb') as fh:
+    src = sys.argv[1]
+    dst = sys.argv[2]
+
+    try:
+        signal = sys.argv[3]
+    except IndexError:
+        signal = None
+
+    with open(src, 'rb') as fh:
         k, l, = struct.unpack('<2I', fh.read(8))
 
         dirname = fh.read(k).decode()
@@ -18,6 +28,12 @@ def main():
         importlib.import_module(module_name)
 
         fn, args, kwargs = pickle.loads(fh.read())
+
+    if signal:
+        while not os.path.isfile(signal):
+            time.sleep(60)
+
+        os.unlink(signal)
 
     try:
         result = fn(*args, **kwargs)
@@ -29,7 +45,7 @@ def main():
     else:
         status = 0
 
-    with open(sys.argv[2], 'wb') as fh:
+    with open(dst, 'wb') as fh:
         pickle.dump(result, fh)
 
     exit(status)
