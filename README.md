@@ -222,7 +222,7 @@ Make a copy of `config.ini.sample`, and edit it.
             <td></td>
         </tr>
         <tr>
-            <td rowspan=4>Update 3</td>
+            <td rowspan=5>Update 3</td>
             <td>update_matches</td>
             <td>Updates production tables with match data</td>
             <td></td>
@@ -230,6 +230,11 @@ Make a copy of `config.ini.sample`, and edit it.
         <tr>
             <td>update_feature_matches</td>
             <td>Updates production tables with feature match data</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>finalize</td>
+            <td>Refresh match MV tables</td>
             <td></td>
         </tr>
         <tr>
