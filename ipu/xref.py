@@ -195,7 +195,7 @@ def update_splice_variants(user, passwd, db):
                     "AND XREF.UPI = IPR.UPI "
                     "AND XREF.DELETED = 'N' "
                     "AND XREF.DBID IN (24, 25) "
-                    "AND I2D.DBCODE NOT IN ('l', 'g', 'j', 'n', 'q', 's', 'v', 'x')")
+                    "AND I2D.DBCODE NOT IN ('g', 'j', 'n', 'q', 's', 'v', 'x')")
         con.commit()
 
         logging.info('\tloading matches into VARSPLIC_MATCH')

@@ -134,7 +134,7 @@ def add_new_matches(user, passwd, db, chunksize=100000):
                     "  INTERPRO.IPRSCAN2DBCODE I2D "
                     "WHERE PS.UPI = IPR.UPI "
                     "  AND I2D.IPRSCAN_SIG_LIB_REL_ID = IPR.ANALYSIS_ID "
-                    "  AND I2D.DBCODE NOT IN ('l', 'g', 'j', 'n', 'q', 's', 'v', 'x')")
+                    "  AND I2D.DBCODE NOT IN ('g', 'j', 'n', 'q', 's', 'v', 'x')")
         data = []
         cnt = 0
 

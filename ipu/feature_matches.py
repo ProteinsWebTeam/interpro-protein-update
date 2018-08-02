@@ -107,7 +107,7 @@ def add_new_feature_matches(user, passwd, db, chunksize=100000):
                     "  INTERPRO.IPRSCAN2DBCODE I2D "
                     "WHERE PS.UPI = IPR.UPI "
                     "  AND I2D.IPRSCAN_SIG_LIB_REL_ID = IPR.ANALYSIS_ID "
-                    "  AND I2D.DBCODE IN ('l', 'g', 'j', 'n', 'q', 's', 'v', 'x')")
+                    "  AND I2D.DBCODE IN ('g', 'j', 'n', 'q', 's', 'v', 'x')")
         data = []
         data_len = 0
         cnt = 0
@@ -200,14 +200,21 @@ def delete_feature_match(user, passwd, db):
 
         logging.info('deleting old feature matches')
         cur.execute('ALTER SESSION FORCE PARALLEL DML PARALLEL 4')
-        cur.execute('DELETE /*+ PARALLEL */ '
-                    'FROM INTERPRO.FEATURE_MATCH M '
-                    'WHERE EXISTS('
-                    '  SELECT PROTEIN_AC '
-                    '  FROM INTERPRO.PROTEIN_TO_SCAN S '
-                    '  WHERE S.PROTEIN_AC = M.PROTEIN_AC'
-                    ')')
-        con.commit()
+
+        # Delete one DB code (partition) at a time to save on TEMP/UNDO tablespace
+        codes = ['g', 'j', 'n', 'q', 's', 'v', 'x']
+        for code in codes:
+            logging.info('deleting old feature matches for DB code: {0}'.format(code))
+            cur.prepare('DELETE /*+ PARALLEL */ '
+                        'FROM INTERPRO.FEATURE_MATCH M '
+                        'WHERE EXISTS('
+                        '  SELECT PROTEIN_AC '
+                        '  FROM INTERPRO.PROTEIN_TO_SCAN S '
+                        '  WHERE S.PROTEIN_AC = M.PROTEIN_AC'
+                        '  AND M.DBCODE = :db'
+                        ')')
+            cur.execute(None, {'db':code})
+            con.commit()
 
 
 def insert_feature_match(user, passwd, db):
