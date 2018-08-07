@@ -61,7 +61,7 @@ def prepare_feature_matches(db_user, db_passwd, db_host, **kwargs):
 
         content += [
             '',
-            'Signatures not in the METHOD table having matches',
+            'Signatures not in the FEATURE_METHOD table having matches',
             '    Signature',
             '    ' + '-' * 20
         ]
@@ -201,19 +201,18 @@ def delete_feature_match(user, passwd, db):
         logging.info('deleting old feature matches')
         cur.execute('ALTER SESSION FORCE PARALLEL DML PARALLEL 4')
 
-        # Delete one DB code (partition) at a time to save on TEMP/UNDO tablespace
-        codes = ['g', 'j', 'n', 'q', 's', 'v', 'x']
+        # TODO Delete one DB code (partition) at a time to save on TEMP/UNDO tablespace?
+        #codes = ['g', 'j', 'n', 'q', 's', 'v', 'x']
+        #partition = 'FEATURE_MATCH_DBCODE_{0}'.format(code.upper())
         for code in codes:
-            logging.info('deleting old feature matches for DB code: {0}'.format(code))
-            cur.prepare('DELETE /*+ PARALLEL */ '
+            #logging.info('deleting old feature matches for DB code: {0}'.format(code))
+            cur.execute('DELETE /*+ PARALLEL */ '
                         'FROM INTERPRO.FEATURE_MATCH M '
                         'WHERE EXISTS('
                         '  SELECT PROTEIN_AC '
                         '  FROM INTERPRO.PROTEIN_TO_SCAN S '
                         '  WHERE S.PROTEIN_AC = M.PROTEIN_AC'
-                        '  AND M.DBCODE = :db'
                         ')')
-            cur.execute(None, {'db':code})
             con.commit()
 
 
