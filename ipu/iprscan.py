@@ -3,7 +3,7 @@
 
 import logging
 import os
-
+import sys
 import cx_Oracle
 from mundone import Batch, Task
 
@@ -256,7 +256,9 @@ def compare_ispro_ippro(db_user, db_passwd, db_host, **kwargs):
 def refresh_mv_iprscan(user, passwd, host, method='C', **kwargs):
 
     # TODO Add model_ac column to *pct* tables, plus support for location fragments too?
-    # TODO Or delete this refresh_mv_iprscan if never used!
+    # TODO Or delete this refresh_mv_iprscan if never used! <-- DO THIS!
+    logging.critical('error: refresh_mv_iprscan code was called that should no longer be used?')
+    return False
 
     workdir = kwargs.get('workdir', os.getcwd())
     queue = kwargs.get('queue')
@@ -698,7 +700,7 @@ def recreate_aa_iprscan(user, passwd, db):
         Create the view with up-to-date analysis_ids:
             3 PHOBIUS, 29 TMHMM, 30 SIGNALP_EUK, 31 SIGNALP_GRAM_POSITIVE
             32 SIGNALP_GRAM_NEGATIVE, 33 COILS, 36 PROSITE_PATTERNS,
-            37 PROSITE_PROFILES
+            37 PROSITE_PROFILES, 69 MOBIDBLITE
         '''
         cur.execute("CREATE MATERIALIZED VIEW IPRSCAN.AA_IPRSCAN REFRESH FORCE ON DEMAND AS ("
                     "  SELECT "
@@ -706,7 +708,8 @@ def recreate_aa_iprscan(user, passwd, db):
                     "    ANALYSIS_ID AS LIBRARY_ID, "
                     "    METHOD_AC AS SIGNATURE, "
                     "    SEQ_START, "
-                    "    SEQ_END "
+                    "    SEQ_END, "
+                    "    SEQ_FEATURE "
                     "  FROM IPRSCAN.MV_IPRSCAN PARTITION(TMHMM) "
                     "  UNION "
                     "  SELECT "
@@ -714,7 +717,8 @@ def recreate_aa_iprscan(user, passwd, db):
                     "    ANALYSIS_ID AS LIBRARY_ID, "
                     "    METHOD_AC AS SIGNATURE, "
                     "    SEQ_START, "
-                    "    SEQ_END "
+                    "    SEQ_END, "
+                    "    SEQ_FEATURE "
                     "  FROM IPRSCAN.MV_IPRSCAN PARTITION(SIGNALP_EUK) "
                     "  UNION "
                     "  SELECT "
@@ -722,7 +726,8 @@ def recreate_aa_iprscan(user, passwd, db):
                     "    ANALYSIS_ID AS LIBRARY_ID, "
                     "    METHOD_AC AS SIGNATURE, "
                     "    SEQ_START, "
-                    "    SEQ_END "
+                    "    SEQ_END, "
+                    "    SEQ_FEATURE "
                     "  FROM IPRSCAN.MV_IPRSCAN PARTITION(SIGNALP_GRAM_POSITIVE) "
                     "  UNION "
                     "  SELECT "
@@ -730,7 +735,8 @@ def recreate_aa_iprscan(user, passwd, db):
                     "    ANALYSIS_ID AS LIBRARY_ID, "
                     "    METHOD_AC AS SIGNATURE, "
                     "    SEQ_START, "
-                    "    SEQ_END "
+                    "    SEQ_END, "
+                    "    SEQ_FEATURE "
                     "  FROM IPRSCAN.MV_IPRSCAN PARTITION(SIGNALP_GRAM_NEGATIVE) "
                     "  UNION "
                     "  SELECT "
@@ -738,7 +744,8 @@ def recreate_aa_iprscan(user, passwd, db):
                     "    ANALYSIS_ID AS LIBRARY_ID, "
                     "    METHOD_AC AS SIGNATURE, "
                     "    SEQ_START, "
-                    "    SEQ_END "
+                    "    SEQ_END, "
+                    "    SEQ_FEATURE "
                     "  FROM IPRSCAN.MV_IPRSCAN PARTITION(COILS) "
                     "  UNION "
                     "  SELECT "
@@ -746,7 +753,8 @@ def recreate_aa_iprscan(user, passwd, db):
                     "    ANALYSIS_ID AS LIBRARY_ID, "
                     "    METHOD_AC AS SIGNATURE, "
                     "    SEQ_START, "
-                    "    SEQ_END "
+                    "    SEQ_END, "
+                    "    SEQ_FEATURE "
                     "  FROM IPRSCAN.MV_IPRSCAN PARTITION(PROSITE_PATTERNS) "
                     "  UNION "
                     "  SELECT "
@@ -754,7 +762,8 @@ def recreate_aa_iprscan(user, passwd, db):
                     "    ANALYSIS_ID AS LIBRARY_ID, "
                     "    METHOD_AC AS SIGNATURE, "
                     "    SEQ_START, "
-                    "    SEQ_END "
+                    "    SEQ_END, "
+                    "    SEQ_FEATURE "
                     "  FROM IPRSCAN.MV_IPRSCAN PARTITION(PROSITE_PROFILES) "
                     "  UNION "
                     "  SELECT "
@@ -762,9 +771,19 @@ def recreate_aa_iprscan(user, passwd, db):
                     "    ANALYSIS_ID AS LIBRARY_ID, "
                     "    METHOD_AC AS SIGNATURE, "
                     "    SEQ_START, "
-                    "    SEQ_END "
+                    "    SEQ_END, "
+                    "    SEQ_FEATURE "
                     "  FROM IPRSCAN.MV_IPRSCAN PARTITION(PHOBIUS) "
-                    "  WHERE METHOD_AC in ('SIGNAL_PEPTIDE','TRANSMEMBRANE')"
+                    "  WHERE METHOD_AC in ('SIGNAL_PEPTIDE','TRANSMEMBRANE') "
+                    "  UNION "
+                    "  SELECT "
+                    "    UPI, "
+                    "    ANALYSIS_ID AS LIBRARY_ID, "
+                    "    METHOD_AC AS SIGNATURE, "
+                    "    SEQ_START, "
+                    "    SEQ_END, "
+                    "    SEQ_FEATURE "
+                    "  FROM IPRSCAN.MV_IPRSCAN PARTITION(MOBIDBLITE) "
                     ")")
         con.commit()
 

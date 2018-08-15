@@ -10,6 +10,7 @@ from mundone import Task, Workflow
 
 import ipu.iprscan
 import ipu.matches
+import ipu.feature_matches
 import ipu.methods
 import ipu.proteins
 import ipu.utils
@@ -308,6 +309,20 @@ def main():
             log=os.path.join(outdir, 'prepare_matches')
         ),
 
+        Task(
+            name='prepare_feature_matches',
+            fn=ipu.feature_matches.prepare_feature_matches,
+            requires=['protein2scan'],
+            args=(*db_user_pro, db_host),
+            kwargs=dict(
+                smtp_host=smtp_host,
+                from_addr=sender,
+                to_addrs=mail_interpro
+            ),
+            lsf=dict(queue=queue, mem=4000),  # add_new() requires ~500M, but pre_prod might require more
+            log=os.path.join(outdir, 'prepare_feature_matches')
+        ),
+
         # Refresh AA_IPRSCAN
         Task(
             name='aa_iprscan',
@@ -329,9 +344,18 @@ def main():
         ),
 
         Task(
+            name='update_feature_matches',
+            fn=ipu.feature_matches.update_feature_matches,
+            requires=['prepare_feature_matches'],
+            args=(*db_user_pro, db_host),
+            lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'update_feature_matches')
+        ),
+
+        Task(
             name='finalize',
             fn=ipu.matches.finalize,
-            requires=['update_matches'],
+            requires=['update_matches', 'update_feature_matches'],
             input=['method_changes'],
             args=(*db_user_pro, db_host),
             kwargs=dict(
@@ -351,6 +375,15 @@ def main():
             args=(*db_user_pro, db_host),
             lsf=dict(queue=queue),
             log=os.path.join(outdir, 'refresh_go')
+        ),
+
+        Task(
+            name='refresh_feature_matches',
+            fn=ipu.feature_matches.refresh,
+            requires=['finalize'],
+            args=(*db_user_pro, db_host),
+            lsf=dict(queue=queue),
+            log=os.path.join(outdir, 'refresh_feature_matches')
         ),
 
         # Check CRC64

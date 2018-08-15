@@ -206,6 +206,7 @@ def insert(old_h5, new_h5, db_user, db_passwd, db_host, **kwargs):
         cur.execute('TRUNCATE TABLE INTERPRO.PROTEIN_CHANGES')
         cur.execute('TRUNCATE TABLE INTERPRO.PROTEIN_TO_SCAN')
         cur.execute('TRUNCATE TABLE INTERPRO.MATCH_NEW')
+        cur.execute('TRUNCATE TABLE INTERPRO.FEATURE_MATCH_NEW')
         con.commit()
 
         logging.info('populating PROTEIN_CHANGES')
@@ -567,7 +568,9 @@ def delete_alt(user, passwd, db, **kwargs):
         ('MATCH_DATE', 'DATE "YYYY-MM-DD HH24:MI:SS"'),
         ('TIMESTAMP', 'DATE "YYYY-MM-DD HH24:MI:SS"'),
         ('USERSTAMP', 'CHAR(30)'),
-        ('SCORE', 'FLOAT EXTERNAL NULLIF (SCORE = "NULL")')
+        ('SCORE', 'FLOAT EXTERNAL NULLIF (SCORE = "NULL")'),
+        ('MODEL_AC', 'CHAR(255)'),
+        ('FRAGMENTS', 'CHAR(400)')
     ]
     tasks.append(
         Task(
@@ -580,6 +583,40 @@ def delete_alt(user, passwd, db, **kwargs):
 
     # MATCH_NEW
     table = 'MATCH_NEW'
+    tasks.append(
+        Task(
+            fn=utils.dump_and_load,
+            args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
+            kwargs=dict(exclude=deleted, idx=0),
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
+        )
+    )
+
+    # FEATURE_MATCH
+    table = 'FEATURE_MATCH'
+    columns = [
+        ('PROTEIN_AC', 'CHAR(15)'),
+        ('METHOD_AC', 'CHAR(25)'),
+        ('SEQ_FEATURE', 'CHAR(60)'),
+        ('POS_FROM', 'INTEGER EXTERNAL'),
+        ('POS_TO', 'INTEGER EXTERNAL'),
+        ('DBCODE', 'CHAR(1)'),
+        ('SEQ_DATE', 'DATE "YYYY-MM-DD HH24:MI:SS"'),
+        ('MATCH_DATE', 'DATE "YYYY-MM-DD HH24:MI:SS"'),
+        ('TIMESTAMP', 'DATE "YYYY-MM-DD HH24:MI:SS"'),
+        ('USERSTAMP', 'CHAR(30)')
+    ]
+    tasks.append(
+        Task(
+            fn=utils.dump_and_load,
+            args=(user, passwd, db, 'INTERPRO', table, columns, os.path.join(workdir, table + '.dat')),
+            kwargs=dict(exclude=deleted, idx=0),
+            lsf=dict(mem=4000, tmp=100000, name=table, queue=queue)
+        )
+    )
+
+    # FEAUTE_MATCH_NEW
+    table = 'FEATURE_MATCH_NEW'
     tasks.append(
         Task(
             fn=utils.dump_and_load,

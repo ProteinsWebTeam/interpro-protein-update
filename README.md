@@ -205,9 +205,14 @@ Make a copy of `config.ini.sample`, and edit it.
             <td>Required by Happy Helper</td>
         </tr>
         <tr>
-            <td>Update 2</td>
+            <td rowspan=2>Update 2</td>
             <td>prepare_matches</td>
             <td>Finds new matches</td>
+            <td>A pre-production report is generated, and must be checked</td>
+        </tr>
+        <tr>
+            <td>prepare_feature_matches</td>
+            <td>Finds new feature matches</td>
             <td>A pre-production report is generated, and must be checked</td>
         </tr>
         <tr>
@@ -217,10 +222,30 @@ Make a copy of `config.ini.sample`, and edit it.
             <td></td>
         </tr>
         <tr>
-            <td>Update 3</td>
+            <td rowspan=5>Update 3</td>
             <td>update_matches</td>
             <td>Updates production tables with match data</td>
             <td></td>
+        </tr>
+        <tr>
+            <td>update_feature_matches</td>
+            <td>Updates production tables with feature match data</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>finalize</td>
+            <td>Refresh match MV tables</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>refresh_go</td>
+            <td>Refresh InterPro2GO MV tables</td>
+            <td>Low priority</td>
+        </tr>
+        <tr>
+            <td>refresh_feature_matches</td>
+            <td>Refresh feature match MV tables</td>
+            <td>Low priority</td>
         </tr>
         <tr>
             <td>Check CRC64</td>

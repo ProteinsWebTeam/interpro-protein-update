@@ -126,13 +126,15 @@ def add_new_matches(user, passwd, db, chunksize=100000):
                     "  SYSDATE MATCH_DATE, "
                     "  SYSDATE TIMESTAMP, "
                     "  IPR.EVALUE, "
-                    "  IPR.MODEL_AC "
+                    "  IPR.MODEL_AC, "
+                    "  IPR.FRAGMENTS "
                     "FROM "
                     "  IPRSCAN.MV_IPRSCAN IPR, "
                     "  INTERPRO.PROTEIN_TO_SCAN PS, "
                     "  INTERPRO.IPRSCAN2DBCODE I2D "
                     "WHERE PS.UPI = IPR.UPI "
-                    "AND I2D.IPRSCAN_SIG_LIB_REL_ID = IPR.ANALYSIS_ID")
+                    "  AND I2D.IPRSCAN_SIG_LIB_REL_ID = IPR.ANALYSIS_ID "
+                    "  AND I2D.DBCODE NOT IN ('g', 'j', 'n', 'q', 's', 'v', 'x')")
         data = []
         cnt = 0
 
@@ -154,9 +156,10 @@ def add_new_matches(user, passwd, db, chunksize=100000):
                                  "  TIMESTAMP, "
                                  "  USERSTAMP, "
                                  "  SCORE, "
-                                 "  MODEL_AC"
+                                 "  MODEL_AC, "
+                                 "  FRAGMENTS"
                                  ") "
-                                 "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, 'INTERPRO',  :11, :12)", data)
+                                 "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, 'INTERPRO',  :11, :12, :13)", data)
                 data = []
                 logging.info('adding new matches to staging table\t{}'.format(cnt))
 
@@ -174,9 +177,10 @@ def add_new_matches(user, passwd, db, chunksize=100000):
                              "  TIMESTAMP, "
                              "  USERSTAMP, "
                              "  SCORE, "
-                             "  MODEL_AC"
+                             "  MODEL_AC, "
+                             "  FRAGMENTS"
                              ") "
-                             "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, 'INTERPRO',  :11, :12)", data)
+                             "VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, 'INTERPRO',  :11, :12, :13)", data)
 
         con.commit()
         cur2.close()
@@ -212,7 +216,7 @@ def add_new_matches(user, passwd, db, chunksize=100000):
 
 
 def update_matches(user, passwd, db):
-    delete_match(user, passwd, db) 
+    delete_match(user, passwd, db)
     insert_match(user, passwd, db) 
 
 
@@ -461,7 +465,6 @@ def pre_prod(user, passwd, db):
         'db_changes': db_count_changes,
         'missing_methods': missing_methods
     }
-
 
 def finalize(method_changes, db_user, db_passwd, db_host, **kwargs):
     smtp_host = kwargs.get('smtp_host')
