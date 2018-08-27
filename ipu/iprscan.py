@@ -1698,7 +1698,7 @@ def report_swissprot_changes(user, passwd, db, updates, prefix='swiss_de_report_
         methods = {}
         for row in cur:
             dbcode = row[0]
-            analsysis_id = row[1]
+            analysis_id = row[1]
             method_ac = row[2]
             descr = row[3]
             entry_ac = row[4]
@@ -1723,7 +1723,7 @@ def report_swissprot_changes(user, passwd, db, updates, prefix='swiss_de_report_
                     }
                 }
 
-            m['analyses'][analsysis_id].add(descr)
+            m['analyses'][analysis].add(descr)
 
         cur.execute(
             """
