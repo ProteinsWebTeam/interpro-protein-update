@@ -1723,7 +1723,7 @@ def report_swissprot_changes(user, passwd, db, updates, prefix='swiss_de_report_
                     }
                 }
 
-            m['analyses'][analysis].add(descr)
+            m['analyses'][analysis_id].add(descr)
 
         cur.execute(
             """
