@@ -1671,8 +1671,8 @@ def report_swissprot_changes(user, passwd, db, updates, prefix='swiss_de_report_
     databases = {}
     analyses = []
     for dbcode, last_id, new_id in updates:
-        databases[dbcode] = (last_id, new_id)
-        analyses += [last_id, new_id]
+        databases[dbcode] = (int(last_id), int(new_id))
+        analyses += [int(last_id), int(new_id)]
 
     with cx_Oracle.connect(user, passwd, db) as con:
         con.autocommit = 0
