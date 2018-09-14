@@ -195,7 +195,7 @@ def main():
                 [os.path.join(outdir, 'swiss.h5'), os.path.join(outdir, 'trembl.h5')],
                 os.path.join(outdir, 'uniprot.h5')
             ),
-            lsf=dict(queue=queue, mem=3000),
+            lsf=dict(queue=queue, mem=5000),
             log=os.path.join(outdir, 'merge_h5')
         ),
         Task(
