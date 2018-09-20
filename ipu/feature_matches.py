@@ -192,20 +192,14 @@ def delete_feature_match(user, passwd, db):
 
         logging.info('deleting old feature matches')
         cur.execute('ALTER SESSION FORCE PARALLEL DML PARALLEL 4')
-
-        # TODO Delete one DB code (partition) at a time to save on TEMP/UNDO tablespace?
-        #codes = ['g', 'j', 'n', 'q', 's', 'v', 'x']
-        #partition = 'FEATURE_MATCH_DBCODE_{0}'.format(code.upper())
-        for code in codes:
-            #logging.info('deleting old feature matches for DB code: {0}'.format(code))
-            cur.execute('DELETE /*+ PARALLEL */ '
-                        'FROM INTERPRO.FEATURE_MATCH M '
-                        'WHERE EXISTS('
-                        '  SELECT PROTEIN_AC '
-                        '  FROM INTERPRO.PROTEIN_TO_SCAN S '
-                        '  WHERE S.PROTEIN_AC = M.PROTEIN_AC'
-                        ')')
-            con.commit()
+        cur.execute('DELETE /*+ PARALLEL */ '
+                    'FROM INTERPRO.FEATURE_MATCH M '
+                    'WHERE EXISTS('
+                    '  SELECT PROTEIN_AC '
+                    '  FROM INTERPRO.PROTEIN_TO_SCAN S '
+                    '  WHERE S.PROTEIN_AC = M.PROTEIN_AC'
+                    ')')
+        con.commit()
 
 
 def insert_feature_match(user, passwd, db):
