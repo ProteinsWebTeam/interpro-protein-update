@@ -40,8 +40,11 @@ def prepare_feature_matches(db_user, db_passwd, db_host, **kwargs):
 
         for m in data['case3']:
             content.append(
-                ' ' * 8 + '{:<20}{:<20}{:<10}{:<10}{:<3}{:<19}'.format(m['protein'], m['method'], m['pos_from'], m['pos_to'], m['dbcode'], m['seq_feature'])
-            )
+                ' ' * 8 + '{:<20}{:<20}{:<10}{:<10}{:<3}{:<19}'.format(
+                    m['protein'], m['method'], m['pos_from'],
+                    m['pos_to'], m['dbcode'],
+                    m['seq_feature'] if m['seq_feature'] else ''
+                ))
 
         """
         smtplib encodes with ascii, which fails to encode '±'.
