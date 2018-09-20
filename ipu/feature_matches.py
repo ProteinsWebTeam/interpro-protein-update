@@ -327,7 +327,7 @@ def pre_prod(user, passwd, db):
                     'FROM INTERPRO.CV_DATABASE CVD '
                     'JOIN ('
                     '  SELECT DBCODE, NVL(OLD.COUNT, 0) AS COUNT_OLD, NVL(FEATURE_MATCH.COUNT, 0) + NVL(FEATURE_MATCH_NEW.COUNT, 0) AS COUNT_NEW FROM ('
-                    '    SELECT M1.DBCODE, SUM(MMM.FEATURE_MATCH_COUNT) AS COUNT '
+                    '    SELECT M1.DBCODE, SUM(MMM.MATCH_COUNT) AS COUNT '
                     '    FROM INTERPRO.FEATURE_METHOD M1 '
                     '    JOIN INTERPRO.MV_FEA_METHOD_MATCH MMM USING (METHOD_AC) '
                     '    GROUP BY DBCODE'
