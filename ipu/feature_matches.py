@@ -230,7 +230,7 @@ def pre_prod(user, passwd, db):
         logging.info('  matches with invalid start/end posititions')
         cur.execute('SELECT /*+ PARALLEL */ COUNT(*) '
                     'FROM INTERPRO.FEATURE_MATCH_NEW '
-                    'WHERE POS_FROM >= POS_TO OR POS_FROM < 1')
+                    'WHERE POS_FROM > POS_TO OR POS_FROM < 1')
         cnt_pos_error_2 = cur.fetchone()[0]
         logging.info('    {}'.format(cnt_pos_error_2))
 
