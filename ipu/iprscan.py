@@ -1679,19 +1679,30 @@ def report_swissprot_changes(user, passwd, db, updates, prefix='swiss_de_report_
         cur = con.cursor()
         cur.execute(
             """
-            SELECT DISTINCT M.DBCODE, IPR.ANALYSIS_ID, IPR.METHOD_AC, D.TEXT, E.ENTRY_AC, E.NAME, E.ENTRY_TYPE
-              FROM INTERPRO.PROTEIN P
-                INNER JOIN UNIPARC.XREF UX ON P.PROTEIN_AC = UX.AC
-                INNER JOIN IPRSCAN.MV_IPRSCAN_MINI IPR ON UX.UPI = IPR.UPI
-                INNER JOIN INTERPRO_ANALYSIS_LOAD.PROTEIN_DESC P2D ON UX.AC = P2D.PROTEIN_AC
-                INNER JOIN INTERPRO_ANALYSIS_LOAD.DESC_VALUE D ON P2D.DESC_ID = D.DESC_ID
-                INNER JOIN INTERPRO.METHOD M ON IPR.METHOD_AC = M.METHOD_AC
-                INNER JOIN INTERPRO.ENTRY2METHOD E2M ON M.METHOD_AC = E2M.METHOD_AC
-                INNER JOIN INTERPRO.ENTRY E ON E2M.ENTRY_AC = E.ENTRY_AC
-            WHERE P.DBCODE = 'S'
+            SELECT DISTINCT 
+              M.DBCODE, IPR.ANALYSIS_ID, IPR.METHOD_AC, 
+              D.TEXT, E.ENTRY_AC, E.NAME, E.ENTRY_TYPE
+            FROM IPRSCAN.MV_IPRSCAN_MINI IPR
+            INNER JOIN INTERPRO.PROTEIN_TO_SCAN PS 
+              ON IPR.UPI = PS.UPI
+            INNER JOIN INTERPRO.PROTEIN P 
+              ON PS.PROTEIN_AC = P.PROTEIN_AC
+            INNER JOIN INTERPRO_ANALYSIS_LOAD.PROTEIN_DESC PD 
+              ON P.PROTEIN_AC = PD.PROTEIN_AC
+            INNER JOIN INTERPRO_ANALYSIS_LOAD.DESC_VALUE D
+              ON PD.DESC_ID = D.DESC_ID
+            INNER JOIN INTERPRO.METHOD M 
+              ON IPR.METHOD_AC = M.METHOD_AC
+            INNER JOIN INTERPRO.ENTRY2METHOD EM
+              ON M.METHOD_AC = EM.METHOD_AC
+            INNER JOIN INTERPRO.ENTRY E
+              ON EM.ENTRY_AC = E.ENTRY_AC
+            WHERE IPR.ANALYSIS_ID IN ({}) 
+            AND P.DBCODE = 'S'
             AND P.FRAGMENT = 'N'
-            AND IPR.ANALYSIS_ID IN ({})
-            """.format(format(','.join([':'+str(i+1) for i in range(len(analyses))]))),
+            """.format(
+                ','.join([':'+str(i+1) for i in range(len(analyses))])
+            ),
             analyses
         )
 
