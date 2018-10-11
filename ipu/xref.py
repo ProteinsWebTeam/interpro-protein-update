@@ -102,36 +102,17 @@ def refresh_method2swiss(user, passwd, db):
         con.autocommit = 0
         cur = con.cursor()
 
-        # Old Happy Helper schema
         cur.execute('TRUNCATE TABLE INTERPRO.METHOD2SWISS_DE')
-        cur.execute("INSERT INTO INTERPRO.METHOD2SWISS_DE "
-                    "SELECT "
-                    "  F2P.SEQ_ID AS PROTEIN_AC, "
-                    "  PDV.DESCRIPTION, "
-                    "  F2P.FEATURE_ID AS METHOD_AC, "
-                    "  'before' AS STATUS "
-                    "FROM "
-                    "  INTERPRO_ANALYSIS_LOAD.FEATURE2PROTEIN F2P, "
-                    "  INTERPRO_ANALYSIS_LOAD.FEATURE_SUMMARY FS, "
-                    "  INTERPRO_ANALYSIS_LOAD.PROTEIN_DESCRIPTION_CODE PDC, "
-                    "  INTERPRO_ANALYSIS_LOAD.PROTEIN_DESCRIPTION_VALUE PDV "
-                    "WHERE F2P.DB = 'S' "
-                    "AND F2P.FEATURE_ID = FS.FEATURE_ID "
-                    "AND FS.DBCODE != 'm' "
-                    "AND F2P.SEQ_ID = PDC.PROTEIN_AC "
-                    "AND PDC.DESCRIPTION_ID = PDV.DESCRIPTION_ID")
-        con.commit()
-
-        # Pronto schema
-        cur.execute('TRUNCATE TABLE INTERPRO_ANALYSIS.METHOD2SWISS_DE')
         cur.execute(
             """
-            INSERT /*+APPEND*/ INTO INTERPRO_ANALYSIS.METHOD2SWISS_DE
-            SELECT MP.PROTEIN_AC, MP.METHOD_AC, D.TEXT
-              FROM INTERPRO_ANALYSIS.METHOD2PROTEIN MP
-            INNER JOIN INTERPRO_ANALYSIS.METHOD M ON MP.METHOD_AC = M.METHOD_AC
-            INNER JOIN INTERPRO_ANALYSIS.DESC_VALUE D ON MP.DESC_ID = D.DESC_ID
-            WHERE MP.DBCODE = 'S'            
+            INSERT /*+APPEND*/ INTO INTERPRO.METHOD2SWISS_DE
+              SELECT MP.PROTEIN_AC, MP.METHOD_AC, D.TEXT
+              FROM INTERPRO_ANALYSIS_LOAD.METHOD2PROTEIN MP
+                INNER JOIN INTERPRO_ANALYSIS_LOAD.METHOD M
+                  ON MP.METHOD_AC = M.METHOD_AC
+                INNER JOIN INTERPRO_ANALYSIS_LOAD.DESC_VALUE D
+                  ON MP.DESC_ID = D.DESC_ID
+              WHERE MP.DBCODE = 'S'
             """
         )
         con.commit()
