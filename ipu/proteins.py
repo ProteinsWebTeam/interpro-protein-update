@@ -361,64 +361,65 @@ def delete(user, passwd, db, **kwargs):
         batch.results                               # val: num of proteins to delete
     ))
 
-    with cx_Oracle.connect(user, passwd, db) as con:
-        con.autocommit = 0
-        cur = con.cursor()
+    if any(counts.values()):
+        with cx_Oracle.connect(user, passwd, db) as con:
+            con.autocommit = 0
+            cur = con.cursor()
 
-        # Disable constraints (child tables)
-        logging.info('disabling constraints')
+            # Disable constraints (child tables)
+            logging.info('disabling constraints')
+            for t in tables:
+                utils.toggle_constraint(cur, t['owner'], t['name'], t['constraint'], enable=False)
+
+            # Disable constraints (PROTEIN table)
+            constraints = utils.get_constraints(cur, 'INTERPRO', 'PROTEIN')
+            for c in constraints:
+                utils.toggle_constraint(cur, 'INTERPRO', 'PROTEIN', c['name'], enable=False)
+
+            con.commit()
+
+        # Delete rows
+        logging.info('deleting rows')
+        tasks = []
         for t in tables:
-            utils.toggle_constraint(cur, t['owner'], t['name'], t['constraint'], enable=False)
+            logfile = os.path.join(logdir, t['name'] + '.log') if logdir else None
+            tasks.append(
+                Task(
+                    fn=_delete_iter,
+                    args=(user, passwd, db, t['owner'], t['name'], cnt_to_delete_all),
+                    kwargs=dict(chunksize=chunksize, logfile=logfile),
+                    lsf=dict(name=t['name'], queue=queue),
+                    log=False
+                )
+            )
 
-        # Disable constraints (PROTEIN table)
-        constraints = utils.get_constraints(cur, 'INTERPRO', 'PROTEIN')
-        for c in constraints:
-            utils.toggle_constraint(cur, 'INTERPRO', 'PROTEIN', c['name'], enable=False)
-
-        con.commit()
-
-    # Delete rows
-    logging.info('deleting rows')
-    tasks = []
-    for t in tables:
-        logfile = os.path.join(logdir, t['name'] + '.log') if logdir else None
+        logfile = os.path.join(logdir, 'PROTEIN.log') if logdir else None
         tasks.append(
             Task(
                 fn=_delete_iter,
-                args=(user, passwd, db, t['owner'], t['name'], cnt_to_delete_all),
+                args=(user, passwd, db, 'INTERPRO', 'PROTEIN', cnt_to_delete_all),
                 kwargs=dict(chunksize=chunksize, logfile=logfile),
-                lsf=dict(name=t['name'], queue=queue),
+                lsf=dict(name='PROTEIN', queue=queue),
                 log=False
             )
         )
 
-    logfile = os.path.join(logdir, 'PROTEIN.log') if logdir else None
-    tasks.append(
-        Task(
-            fn=_delete_iter,
-            args=(user, passwd, db, 'INTERPRO', 'PROTEIN', cnt_to_delete_all),
-            kwargs=dict(chunksize=chunksize, logfile=logfile),
-            lsf=dict(name='PROTEIN', queue=queue),
-            log=False
-        )
-    )
+        batch = Batch(tasks, dir=workdir)
+        if not batch.start().wait().is_done():
+            logging.critical('one or more tasks failed')
+            exit(1)
 
-    batch = Batch(tasks, dir=workdir)
-    if not batch.start().wait().is_done():
-        logging.critical('one or more tasks failed')
-        exit(1)
+        counts2 = dict(zip(
+            [t['name'] for t in tables] + ['PROTEIN'],  # key: name of table
+            batch.results                               # val: num of proteins deleted
+        ))
 
-    counts2 = dict(zip(
-        [t['name'] for t in tables] + ['PROTEIN'],  # key: name of table
-        batch.results                               # val: num of proteins deleted
-    ))
-
-    for table in counts:
-        counts[table] -= counts2[table]
+        for table in counts:
+            counts[table] -= counts2[table]
 
     if any(counts.values()):  # unexpected counts: some rows were not deleted
         logging.critical('the following tables still contain deleted proteins: {}'.format(
-            ', '.join([t for t, c in counts.items() if c])
+            ', '.join(["{} ({})".format(t, c) for t, c in counts.items() if c])
         ))
         exit(1)
 
@@ -465,6 +466,8 @@ def _delete_iter(user, passwd, db, owner, table, n, **kwargs):
     logfile = kwargs.get('logfile')
     if not logfile:
         logfile = os.devnull
+    elif os.path.isfile(logfile):
+        logfile += "2"
 
     cnt_deleted = 0
 
