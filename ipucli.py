@@ -295,6 +295,7 @@ def main():
         ),
 
         # Update 2
+        # todo: skip case1,2,3 counts as we don't need those anymore
         Task(
             name='prepare_matches',
             fn=ipu.matches.prepare_matches,
@@ -324,6 +325,7 @@ def main():
         ),
 
         # Update3
+        # todo: read output from prepare* task and check for values in report
         Task(
             name='update_matches',
             fn=ipu.matches.update_matches,
