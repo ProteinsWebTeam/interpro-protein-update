@@ -380,6 +380,11 @@ def dump(user, passwd, db, outdir, **kwargs):
         cur.callproc('INTERPRO.IPRO_UTL_PKG.TABLE_STATS', ['XREF_SUMMARY', ])
         con.commit()
 
+        cur.execute('GRANT SELECT ON IPRSCAN.MV_IPM_HAMAP_MATCH TO KRAKEN')
+        cur.execute('GRANT SELECT ON IPRSCAN.MV_IPM_PROSITE_PROFILES_MATCH TO KRAKEN')
+        cur.execute('GRANT SELECT ON IPRSCAN.MV_IPM_PROSITE_PATTERNS_MATCH TO KRAKEN')
+        con.commit()
+
         logging.info('performing sanity check')
         # UNKNOWN,FALSE NEG AND PARTIAL status in Databases other than Prosite
         cur.execute("SELECT /*+ PARALLEL */ COUNT(*) "
