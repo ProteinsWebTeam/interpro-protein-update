@@ -341,9 +341,12 @@ def pre_prod(user, passwd, db):
         'pos_error2': cnt_pos_error_2,
         'missing_proteins': cnt_missing_proteins,
         'duplicate_rows': duplicate_rows,
-        'case1': cnt_case_1,
-        'case2': cnt_case_2,
-        'case3': case_3,
+        # 'case1': cnt_case_1,
+        # 'case2': cnt_case_2,
+        # 'case3': case_3,
+        'case1': 0,
+        'case2': 0,
+        'case3': [],
         'db_changes': db_count_changes,
         'missing_methods': missing_methods
     }
