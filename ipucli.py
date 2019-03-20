@@ -184,7 +184,7 @@ def main():
             name='dump_db',
             fn=ipu.proteins.dump_proteins,
             args=(*db_user_pro, db_host, os.path.join(outdir, 'db.h5')),
-            lsf=dict(queue=queue, mem=10000),
+            lsf=dict(queue=queue, mem=16000),
             log=os.path.join(outdir, 'dump_db')
         ),
         Task(
