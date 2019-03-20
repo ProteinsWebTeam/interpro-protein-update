@@ -209,7 +209,7 @@ def main():
                 db_host
             ),
             kwargs=dict(chunksize=100000),
-            lsf=dict(queue=queue, mem=16000),
+            lsf=dict(queue=queue, mem=32000),
             log=os.path.join(outdir, 'insert_proteins')
         ),
         Task(
