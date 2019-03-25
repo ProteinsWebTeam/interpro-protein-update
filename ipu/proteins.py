@@ -382,6 +382,9 @@ def delete(user, passwd, db, **kwargs):
         logging.info('deleting rows')
         tasks = []
         for t in tables:
+            if not counts[t['name']]:
+                continue
+
             logfile = os.path.join(logdir, t['name'] + '.log') if logdir else None
             tasks.append(
                 Task(
@@ -393,29 +396,31 @@ def delete(user, passwd, db, **kwargs):
                 )
             )
 
-        logfile = os.path.join(logdir, 'PROTEIN.log') if logdir else None
-        tasks.append(
-            Task(
-                fn=_delete_iter,
-                args=(user, passwd, db, 'INTERPRO', 'PROTEIN', cnt_to_delete_all),
-                kwargs=dict(chunksize=chunksize, logfile=logfile),
-                lsf=dict(name='PROTEIN', queue=queue),
-                log=False
+        if counts['PROTEIN']:
+            logfile = os.path.join(logdir, 'PROTEIN.log') if logdir else None
+            tasks.append(
+                Task(
+                    fn=_delete_iter,
+                    args=(user, passwd, db, 'INTERPRO', 'PROTEIN', cnt_to_delete_all),
+                    kwargs=dict(chunksize=chunksize, logfile=logfile),
+                    lsf=dict(name='PROTEIN', queue=queue),
+                    log=False
+                )
             )
-        )
 
-        batch = Batch(tasks, dir=workdir)
-        if not batch.start().wait().is_done():
-            logging.critical('one or more tasks failed')
-            exit(1)
+        if tasks:
+            batch = Batch(tasks, dir=workdir)
+            if not batch.start().wait().is_done():
+                logging.critical('one or more tasks failed')
+                exit(1)
 
-        counts2 = dict(zip(
-            [t['name'] for t in tables] + ['PROTEIN'],  # key: name of table
-            batch.results                               # val: num of proteins deleted
-        ))
+            counts2 = dict(zip(
+                [t['name'] for t in tables] + ['PROTEIN'],  # key: name of table
+                batch.results                               # val: num of proteins deleted
+            ))
 
-        for table in counts:
-            counts[table] -= counts2[table]
+            for table in counts:
+                counts[table] -= counts2[table]
 
     if any(counts.values()):  # unexpected counts: some rows were not deleted
         logging.critical('the following tables still contain deleted proteins: {}'.format(
