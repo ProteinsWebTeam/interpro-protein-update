@@ -301,7 +301,7 @@ def main():
             fn=ipu.matches.prepare_matches,
             requires=['protein2scan'],
             args=(*db_user_pro, db_host),
-            lsf=dict(queue=queue, mem=4000),  # add_new() requires ~500M, but pre_prod might require more
+            lsf=dict(queue=queue, mem=8000),  # add_new() requires ~500M, but pre_prod might require more
             log=os.path.join(outdir, 'prepare_matches')
         ),
 
@@ -310,7 +310,7 @@ def main():
             fn=ipu.feature_matches.prepare_feature_matches,
             requires=['protein2scan'],
             args=(*db_user_pro, db_host),
-            lsf=dict(queue=queue, mem=4000),  # add_new() requires ~500M, but pre_prod might require more
+            lsf=dict(queue=queue, mem=8000),  # add_new() requires ~500M, but pre_prod might require more
             log=os.path.join(outdir, 'prepare_feature_matches')
         ),
 
