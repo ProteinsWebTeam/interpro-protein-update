@@ -420,7 +420,7 @@ def delete(user, passwd, db, **kwargs):
             ))
 
             for table in counts:
-                counts[table] -= counts2[table]
+                counts[table] -= counts2.get(table, 0)
 
     if any(counts.values()):  # unexpected counts: some rows were not deleted
         logging.critical('the following tables still contain deleted proteins: {}'.format(
