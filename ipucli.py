@@ -319,7 +319,7 @@ def main():
             name='aa_iprscan',
             fn=ipu.iprscan.recreate_aa_iprscan,
             requires=['protein2scan'],
-            args=(*db_user_pro, db_host),
+            args=(*db_user_scan, db_host),
             lsf=dict(queue=queue),
             log=os.path.join(outdir, 'aa_iprscan')
         ),
