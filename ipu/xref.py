@@ -351,7 +351,7 @@ def update_taxonomy(user, passwd, db):
         con.commit()
 
 
-def dump(user, passwd, db, outdir, **kwargs):
+def dump(user, passwd, user2, passwd2, db, outdir, **kwargs):
     smtp_host = kwargs.get('smtp_host')
     from_addr = kwargs.get('from_addr')
     to_addrs = kwargs.get('to_addrs', [])
@@ -360,6 +360,14 @@ def dump(user, passwd, db, outdir, **kwargs):
         os.makedirs(outdir)
     except FileExistsError:
         pass
+
+    with cx_Oracle.connect(user2, passwd2, db) as con:
+        con.autocommit = 0
+        cur = con.cursor()
+        cur.execute('GRANT SELECT ON IPRSCAN.MV_IPM_HAMAP_MATCH TO KRAKEN')
+        cur.execute('GRANT SELECT ON IPRSCAN.MV_IPM_PROSITE_PROFILES_MATCH TO KRAKEN')
+        cur.execute('GRANT SELECT ON IPRSCAN.MV_IPM_PROSITE_PATTERNS_MATCH TO KRAKEN')
+        con.commit()
 
     with cx_Oracle.connect(user, passwd, db) as con:
         con.autocommit = 0
@@ -378,11 +386,6 @@ def dump(user, passwd, db, outdir, **kwargs):
         con.commit()
 
         cur.callproc('INTERPRO.IPRO_UTL_PKG.TABLE_STATS', ['XREF_SUMMARY', ])
-        con.commit()
-
-        cur.execute('GRANT SELECT ON IPRSCAN.MV_IPM_HAMAP_MATCH TO KRAKEN')
-        cur.execute('GRANT SELECT ON IPRSCAN.MV_IPM_PROSITE_PROFILES_MATCH TO KRAKEN')
-        cur.execute('GRANT SELECT ON IPRSCAN.MV_IPM_PROSITE_PATTERNS_MATCH TO KRAKEN')
         con.commit()
 
         logging.info('performing sanity check')

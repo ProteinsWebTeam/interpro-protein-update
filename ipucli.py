@@ -403,7 +403,7 @@ def main():
             name='dump_xref',
             fn=ipu.xref.dump,
             requires=['update_matches'],
-            args=(*db_user_pro, db_host, tabdir),
+            args=(*db_user_pro, *db_user_scan, db_host, tabdir),
             kwargs=dict(smtp_host=smtp_host, from_addr=sender, to_addrs=mail_interpro),
             lsf=dict(queue=queue),
             log=os.path.join(outdir, 'dump_xref')
