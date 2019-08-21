@@ -1,5 +1,7 @@
 # InterPro Protein Update
 
+:warning: As of August 2019 we do not use this repository for the Protein Update. Please use [pyinterprod](https://github.com/ProteinsWebTeam/pyinterprod).
+
 The InterPro Protein Update is the procedures loading protein data from UniProtKB/Swiss-Prot and UniProtKB/TrEMBL flat files, and updating InterPro production tables to reflect changes.
 
 ## Getting started
